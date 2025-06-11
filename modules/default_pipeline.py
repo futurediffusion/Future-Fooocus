@@ -290,7 +290,9 @@ def refresh_everything(refiner_model_name, base_model_name, loras,
     final_refiner_vae = model_refiner.vae
 
     if final_expansion is None:
-        final_expansion = FooocusExpansion()
+        # ensure expansion model parameters are created outside of inference mode
+        with torch.inference_mode(False):
+            final_expansion = FooocusExpansion()
 
     prepare_text_encoder(async_call=True)
     clear_all_caches()
