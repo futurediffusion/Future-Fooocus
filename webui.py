@@ -13,6 +13,7 @@ import modules.flags as flags
 import modules.gradio_hijack as grh
 import modules.style_sorter as style_sorter
 import modules.prompt_style_system as prompt_style_system
+from modules import styles
 import modules.meta_parser
 import args_manager
 import copy
@@ -25,7 +26,7 @@ from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 
-style_db = prompt_style_system.StyleDatabase(["styles.csv", "styles_integrated.csv"])
+shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
 def get_task(*args):
     args = list(args)
@@ -626,7 +627,7 @@ with shared.gradio_root:
                     style_names=legal_style_names,
                     default_selected=modules.config.default_styles)
 
-                csv_style = gr.Dropdown(label='CSV Styles', choices=list(style_db.styles.keys()), value=None, multiselect=True)
+                csv_style = gr.Dropdown(label='CSV Styles', choices=list(shared.prompt_styles.styles.keys()), value=None, multiselect=True)
                 apply_csv_style_btn = gr.Button(label='Apply CSV Style', variant='secondary')
                 edit_csv_style_btn = gr.Button(label='Edit CSV Style', variant='secondary')
 
@@ -666,51 +667,54 @@ with shared.gradio_root:
                                                            show_progress=False).then(
                         lambda: None, _js='()=>{refresh_style_localization();}')
 
-                def on_apply_csv_style(style_names, pmt, neg_pmt):
+                def materialize_styles(style_names, pmt, neg_pmt):
                     if not style_names:
-                        return pmt, neg_pmt
+                        return pmt, neg_pmt, gr.update(value=[])
                     if isinstance(style_names, str):
                         style_names = [style_names]
                     for name in style_names:
-                        style = style_db.styles.get(name)
+                        style = shared.prompt_styles.styles.get(name)
                         if not style:
                             continue
                         if style.prompt:
                             pmt = prompt_style_system.merge_prompts(style.prompt, pmt)
                         if style.negative_prompt:
                             neg_pmt = prompt_style_system.merge_prompts(style.negative_prompt, neg_pmt)
-                    return pmt, neg_pmt
+                    return pmt, neg_pmt, gr.update(value=[])
 
-                def select_csv_style(style_names):
+                def select_style(style_names):
                     if not style_names or (isinstance(style_names, list) and len(style_names) != 1):
                         return gr.update(visible=False), '', '', ''
                     if isinstance(style_names, list):
                         style_name = style_names[0]
                     else:
                         style_name = style_names
-                    style = style_db.styles.get(style_name)
+                    style = shared.prompt_styles.styles.get(style_name)
                     prompt_txt = style.prompt if style and style.prompt else ''
                     neg_txt = style.negative_prompt if style and style.negative_prompt else ''
                     return gr.update(visible=True), style_name, prompt_txt, neg_txt
 
-                def save_csv_style(name, prompt_txt, neg_txt):
-                    style_db.styles[name] = prompt_style_system.PromptStyle(name, prompt_txt, neg_txt, str(style_db.default_path))
-                    style_db.save_styles()
-                    style_db.reload()
-                    return gr.update(choices=list(style_db.styles.keys()), value=name)
+                def save_style(name, prompt_txt, neg_txt):
+                    shared.prompt_styles.styles[name] = prompt_style_system.PromptStyle(name, prompt_txt, neg_txt, str(shared.prompt_styles.default_path))
+                    shared.prompt_styles.save_styles()
+                    shared.prompt_styles.reload()
+                    return gr.update(choices=list(shared.prompt_styles.styles.keys()), value=name)
 
-                def delete_csv_style(name):
-                    if name in style_db.styles:
-                        del style_db.styles[name]
-                        style_db.save_styles()
-                        style_db.reload()
-                    return gr.update(choices=list(style_db.styles.keys()), value=None), '', '', gr.update(visible=False)
+                def delete_style(name):
+                    if name in shared.prompt_styles.styles:
+                        del shared.prompt_styles.styles[name]
+                        shared.prompt_styles.save_styles()
+                        shared.prompt_styles.reload()
+                    return gr.update(choices=list(shared.prompt_styles.styles.keys()), value=None), '', '', gr.update(visible=False)
 
-                csv_style.change(select_csv_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
-                edit_csv_style_btn.click(select_csv_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
-                save_csv_style_btn.click(save_csv_style, inputs=[csv_style_name, csv_style_prompt, csv_style_negative_prompt], outputs=csv_style, queue=False)
-                delete_csv_style_btn.click(delete_csv_style, inputs=csv_style_name, outputs=[csv_style, csv_style_prompt, csv_style_negative_prompt, csv_style_editor], queue=False)
-                apply_csv_style_btn.click(on_apply_csv_style, inputs=[csv_style, prompt, negative_prompt], outputs=[prompt, negative_prompt], queue=False)
+                def setup_apply_button():
+                    apply_csv_style_btn.click(materialize_styles, inputs=[csv_style, prompt, negative_prompt], outputs=[prompt, negative_prompt, csv_style], queue=False)
+
+                csv_style.change(select_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
+                edit_csv_style_btn.click(select_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
+                save_csv_style_btn.click(save_style, inputs=[csv_style_name, csv_style_prompt, csv_style_negative_prompt], outputs=csv_style, queue=False)
+                delete_csv_style_btn.click(delete_style, inputs=csv_style_name, outputs=[csv_style, csv_style_prompt, csv_style_negative_prompt, csv_style_editor], queue=False)
+                setup_apply_button()
 
             with gr.Tab(label='Models'):
                 with gr.Group():
@@ -1037,7 +1041,7 @@ with shared.gradio_root:
 
         ctrls = [currentTask, generate_image_grid]
         ctrls += [
-            prompt, negative_prompt, style_selections,
+            prompt, negative_prompt, style_selections, csv_style,
             performance_selection, aspect_ratios_selection, image_number, output_format, image_seed,
             read_wildcards_in_order, sharpness, guidance_scale
         ]
