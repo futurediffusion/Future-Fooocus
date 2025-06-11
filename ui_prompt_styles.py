@@ -60,8 +60,22 @@ class UiPromptStyles:
         self.main_ui_negative_prompt = main_ui_negative_prompt
 
         with gr.Row(elem_id=f"{tabname}_styles_row"):
-            self.dropdown = gr.Dropdown(label="Styles", show_label=False, elem_id=f"{tabname}_styles", choices=list(shared.prompt_styles.styles), value=[], multiselect=True, tooltip="Styles")
-            edit_button = ui_components.ToolButton(value=styles_edit_symbol, elem_id=f"{tabname}_styles_edit_button", tooltip="Edit styles")
+            self.dropdown = gr.Dropdown(
+                label="Styles",
+                show_label=False,
+                elem_id=f"{tabname}_styles",
+                choices=list(shared.prompt_styles.styles),
+                value=[],
+                multiselect=True,
+                tooltip="Styles",
+                scale=1,
+            )
+            edit_button = ui_components.ToolButton(
+                value=styles_edit_symbol,
+                elem_id=f"{tabname}_styles_edit_button",
+                tooltip="Edit styles",
+                scale=0,
+            )
 
         with gr.Box(elem_id=f"{tabname}_styles_dialog", elem_classes="popup-dialog") as styles_dialog:
             with gr.Row():

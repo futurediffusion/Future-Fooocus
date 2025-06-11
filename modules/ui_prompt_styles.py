@@ -68,11 +68,13 @@ class UiPromptStyles:
                 value=[],
                 multiselect=True,
                 tooltip="Styles",
+                scale=1,
             )
             edit_button = ui_components.ToolButton(
                 value=styles_edit_symbol,
                 elem_id=f"{tabname}_styles_edit_button",
                 tooltip="Edit styles",
+                scale=0,
             )
 
         with gr.Box(elem_id=f"{tabname}_styles_dialog", visible=False) as styles_dialog:

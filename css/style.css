@@ -350,3 +350,11 @@ div:has(> #positive_prompt) {
 #inpaint_brush_color input[type=color]{
   background: none;
 }
+
+/* Make style edit buttons square and free space for the dropdown */
+[id$="_styles_edit_button"] button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  min-width: 30px;
+}
