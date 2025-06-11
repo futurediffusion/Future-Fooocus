@@ -1,0 +1,3 @@
+name,prompt,negative_prompt
+Example Style,masterpiece, low quality
+Second Style,{prompt}, blurry
