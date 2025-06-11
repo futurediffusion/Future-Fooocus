@@ -1,8 +1,13 @@
 import os
+import sys
 import unittest
 
+sys.argv = [sys.argv[0]]
 import modules.flags
 from modules import util
+
+import tempfile
+import time
 
 
 class TestUtils(unittest.TestCase):
@@ -135,3 +140,38 @@ class TestUtils(unittest.TestCase):
             expected = test["output"]
             actual = util.parse_lora_references_from_prompt(prompt, loras, loras_limit=loras_limit, lora_filenames=lora_filenames)
             self.assertEqual(expected, actual)
+
+
+class TestWildcardCache(unittest.TestCase):
+    def test_load_wildcards_with_cache_invalidation(self):
+        original_path = modules.config.path_wildcards
+        original_files = modules.config.wildcard_filenames
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            modules.config.path_wildcards = tmpdir
+            test_file = 'cache_test.txt'
+            file_path = os.path.join(tmpdir, test_file)
+
+            with open(file_path, 'w') as f:
+                f.write('one\n')
+                f.write('two\n')
+
+            modules.config.wildcard_filenames = [test_file]
+            util.clear_wildcard_cache()
+
+            words1 = util._load_wildcard_words(test_file)
+            self.assertEqual(words1, ['one', 'two'])
+
+            words2 = util._load_wildcard_words(test_file)
+            self.assertIs(words1, words2)
+
+            time.sleep(1)
+            with open(file_path, 'w') as f:
+                f.write('three\n')
+
+            words3 = util._load_wildcard_words(test_file)
+            self.assertEqual(words3, ['three'])
+            self.assertIsNot(words1, words3)
+
+        modules.config.path_wildcards = original_path
+        modules.config.wildcard_filenames = original_files

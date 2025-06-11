@@ -18,6 +18,9 @@ import modules.config
 import modules.sdxl_styles
 from modules.flags import Performance
 
+# Cache to store wildcard file contents along with last modification time
+_wildcard_cache = {}
+
 LANCZOS = (Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.LANCZOS)
 
 # Regexp compiled once. Matches entries with the following pattern:
@@ -26,6 +29,30 @@ LANCZOS = (Image.Resampling.LANCZOS if hasattr(Image, 'Resampling') else Image.L
 LORAS_PROMPT_PATTERN = re.compile(r"(<lora:([^:]+):([+-]?(?:\d+(?:\.\d*)?|\.\d+))>)", re.X)
 
 HASH_SHA256_LENGTH = 10
+
+
+def clear_wildcard_cache():
+    """Clears the cached wildcard file contents."""
+    _wildcard_cache.clear()
+
+
+def _load_wildcard_words(filename: str) -> list:
+    """Load words from a wildcard file with caching based on modification time."""
+    path = os.path.join(modules.config.path_wildcards, filename)
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        raise
+
+    cache_entry = _wildcard_cache.get(path)
+    if cache_entry and cache_entry["mtime"] == mtime:
+        return cache_entry["words"]
+
+    with open(path, encoding="utf-8") as f:
+        words = [x for x in f.read().splitlines() if x != ""]
+
+    _wildcard_cache[path] = {"mtime": mtime, "words": words}
+    return words
 
 
 def erode_or_dilate(x, k):
@@ -475,8 +502,7 @@ def apply_wildcards(wildcard_text, rng, i, read_wildcards_in_order) -> str:
         for placeholder in placeholders:
             try:
                 matches = [x for x in modules.config.wildcard_filenames if os.path.splitext(os.path.basename(x))[0] == placeholder]
-                words = open(os.path.join(modules.config.path_wildcards, matches[0]), encoding='utf-8').read().splitlines()
-                words = [x for x in words if x != '']
+                words = _load_wildcard_words(matches[0])
                 assert len(words) > 0
                 if read_wildcards_in_order:
                     wildcard_text = wildcard_text.replace(f'__{placeholder}__', words[i % len(words)], 1)
