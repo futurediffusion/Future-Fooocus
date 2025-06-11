@@ -11,16 +11,12 @@ import modules.async_worker as worker
 import modules.constants as constants
 import modules.flags as flags
 import modules.gradio_hijack as grh
-import modules.style_sorter as style_sorter
-import modules.prompt_style_system as prompt_style_system
 from modules import styles
 import modules.meta_parser
 import args_manager
 import copy
 import launch
 from extras.inpaint_mask import SAMOptions
-
-from modules.sdxl_styles import legal_style_names
 from modules.private_logger import get_current_html_path
 from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
@@ -622,99 +618,9 @@ with shared.gradio_root:
                 history_link = gr.HTML()
                 shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
 
-            with gr.Tab(label='Styles', elem_classes=['style_selections_tab']):
-                style_sorter.try_load_sorted_styles(
-                    style_names=legal_style_names,
-                    default_selected=modules.config.default_styles)
-
-                csv_style = gr.Dropdown(label='CSV Styles', choices=list(shared.prompt_styles.styles.keys()), value=None, multiselect=True)
-                apply_csv_style_btn = gr.Button(label='Apply CSV Style', variant='secondary')
-                edit_csv_style_btn = gr.Button(label='Edit CSV Style', variant='secondary')
-
-                with gr.Column(visible=False) as csv_style_editor:
-                    csv_style_name = gr.Textbox(label='Name')
-                    csv_style_prompt = gr.Textbox(label='Prompt')
-                    csv_style_negative_prompt = gr.Textbox(label='Negative Prompt')
-                    save_csv_style_btn = gr.Button(label='Save')
-                    delete_csv_style_btn = gr.Button(label='Delete')
-
-                with gr.Accordion('Advanced', open=False):
-                    style_search_bar = gr.Textbox(show_label=False, container=False,
-                                                  placeholder="\U0001F50E Type here to search styles ...",
-                                                  value="",
-                                                  label='Search Styles')
-                    style_selections = gr.CheckboxGroup(show_label=False, container=False,
-                                                        choices=copy.deepcopy(style_sorter.all_styles),
-                                                        value=copy.deepcopy(modules.config.default_styles),
-                                                        label='Selected Styles',
-                                                        elem_classes=['style_selections'])
-                    gradio_receiver_style_selections = gr.Textbox(elem_id='gradio_receiver_style_selections', visible=False)
-
-                    shared.gradio_root.load(lambda: gr.update(choices=copy.deepcopy(style_sorter.all_styles)),
-                                            outputs=style_selections)
-
-                    style_search_bar.change(style_sorter.search_styles,
-                                            inputs=[style_selections, style_search_bar],
-                                            outputs=style_selections,
-                                            queue=False,
-                                            show_progress=False).then(
-                        lambda: None, _js='()=>{refresh_style_localization();}')
-
-                    gradio_receiver_style_selections.input(style_sorter.sort_styles,
-                                                           inputs=style_selections,
-                                                           outputs=style_selections,
-                                                           queue=False,
-                                                           show_progress=False).then(
-                        lambda: None, _js='()=>{refresh_style_localization();}')
-
-                def materialize_styles(style_names, pmt, neg_pmt):
-                    if not style_names:
-                        return pmt, neg_pmt, gr.update(value=[])
-                    if isinstance(style_names, str):
-                        style_names = [style_names]
-                    for name in style_names:
-                        style = shared.prompt_styles.styles.get(name)
-                        if not style:
-                            continue
-                        if style.prompt:
-                            pmt = prompt_style_system.merge_prompts(style.prompt, pmt)
-                        if style.negative_prompt:
-                            neg_pmt = prompt_style_system.merge_prompts(style.negative_prompt, neg_pmt)
-                    return pmt, neg_pmt, gr.update(value=[])
-
-                def select_style(style_names):
-                    if not style_names or (isinstance(style_names, list) and len(style_names) != 1):
-                        return gr.update(visible=False), '', '', ''
-                    if isinstance(style_names, list):
-                        style_name = style_names[0]
-                    else:
-                        style_name = style_names
-                    style = shared.prompt_styles.styles.get(style_name)
-                    prompt_txt = style.prompt if style and style.prompt else ''
-                    neg_txt = style.negative_prompt if style and style.negative_prompt else ''
-                    return gr.update(visible=True), style_name, prompt_txt, neg_txt
-
-                def save_style(name, prompt_txt, neg_txt):
-                    shared.prompt_styles.styles[name] = prompt_style_system.PromptStyle(name, prompt_txt, neg_txt, str(shared.prompt_styles.default_path))
-                    shared.prompt_styles.save_styles()
-                    shared.prompt_styles.reload()
-                    return gr.update(choices=list(shared.prompt_styles.styles.keys()), value=name)
-
-                def delete_style(name):
-                    if name in shared.prompt_styles.styles:
-                        del shared.prompt_styles.styles[name]
-                        shared.prompt_styles.save_styles()
-                        shared.prompt_styles.reload()
-                    return gr.update(choices=list(shared.prompt_styles.styles.keys()), value=None), '', '', gr.update(visible=False)
-
-                def setup_apply_button():
-                    apply_csv_style_btn.click(materialize_styles, inputs=[csv_style, prompt, negative_prompt], outputs=[prompt, negative_prompt, csv_style], queue=False)
-
-                csv_style.change(select_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
-                edit_csv_style_btn.click(select_style, inputs=csv_style, outputs=[csv_style_editor, csv_style_name, csv_style_prompt, csv_style_negative_prompt], queue=False)
-                save_csv_style_btn.click(save_style, inputs=[csv_style_name, csv_style_prompt, csv_style_negative_prompt], outputs=csv_style, queue=False)
-                delete_csv_style_btn.click(delete_style, inputs=csv_style_name, outputs=[csv_style, csv_style_prompt, csv_style_negative_prompt, csv_style_editor], queue=False)
-                setup_apply_button()
+            with gr.Tab(label='Styles'):
+                style_selections = gr.State([])
+                csv_style = gr.State(None)
 
             with gr.Tab(label='Models'):
                 with gr.Group():
@@ -998,8 +904,6 @@ with shared.gradio_root:
                 return result
 
             preset_selection.change(preset_selection_change, inputs=[preset_selection, state_is_generating, inpaint_mode], outputs=load_data_outputs, queue=False, show_progress=True) \
-                .then(fn=style_sorter.sort_styles, inputs=style_selections, outputs=style_selections, queue=False, show_progress=False) \
-                .then(lambda: None, _js='()=>{refresh_style_localization();}') \
                 .then(inpaint_engine_state_change, inputs=[inpaint_engine_state] + enhance_inpaint_mode_ctrls, outputs=enhance_inpaint_engine_ctrls, queue=False, show_progress=False)
 
         performance_selection.change(lambda x: [gr.update(interactive=not flags.Performance.has_restricted_features(x))] * 11 +
@@ -1100,8 +1004,7 @@ with shared.gradio_root:
 
             return modules.meta_parser.load_parameter_button_click(parsed_parameters, state_is_generating, inpaint_mode)
 
-        metadata_import_button.click(trigger_metadata_import, inputs=[metadata_input_image, state_is_generating], outputs=load_data_outputs, queue=False, show_progress=True) \
-            .then(style_sorter.sort_styles, inputs=style_selections, outputs=style_selections, queue=False, show_progress=False)
+        metadata_import_button.click(trigger_metadata_import, inputs=[metadata_input_image, state_is_generating], outputs=load_data_outputs, queue=False, show_progress=True)
 
         generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True),
                               outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating]) \
@@ -1153,9 +1056,7 @@ with shared.gradio_root:
             return describe_prompt, styles
 
         describe_btn.click(trigger_describe, inputs=[describe_methods, describe_input_image, describe_apply_styles],
-                           outputs=[prompt, style_selections], show_progress=True, queue=True) \
-            .then(fn=style_sorter.sort_styles, inputs=style_selections, outputs=style_selections, queue=False, show_progress=False) \
-            .then(lambda: None, _js='()=>{refresh_style_localization();}')
+                           outputs=[prompt, style_selections], show_progress=True, queue=True)
 
         if args_manager.args.enable_auto_describe_image:
             def trigger_auto_describe(mode, img, prompt, apply_styles):
@@ -1165,15 +1066,11 @@ with shared.gradio_root:
                 return gr.update(), gr.update()
 
             uov_input_image.upload(trigger_auto_describe, inputs=[describe_methods, uov_input_image, prompt, describe_apply_styles],
-                                   outputs=[prompt, style_selections], show_progress=True, queue=True) \
-                .then(fn=style_sorter.sort_styles, inputs=style_selections, outputs=style_selections, queue=False, show_progress=False) \
-                .then(lambda: None, _js='()=>{refresh_style_localization();}')
+                                   outputs=[prompt, style_selections], show_progress=True, queue=True)
 
             enhance_input_image.upload(lambda: gr.update(value=True), outputs=enhance_checkbox, queue=False, show_progress=False) \
                 .then(trigger_auto_describe, inputs=[describe_methods, enhance_input_image, prompt, describe_apply_styles],
-                      outputs=[prompt, style_selections], show_progress=True, queue=True) \
-                .then(fn=style_sorter.sort_styles, inputs=style_selections, outputs=style_selections, queue=False, show_progress=False) \
-                .then(lambda: None, _js='()=>{refresh_style_localization();}')
+                      outputs=[prompt, style_selections], show_progress=True, queue=True)
 
 def dump_default_english_config():
     from modules.localization import dump_english_config
