@@ -12,6 +12,7 @@ import modules.constants as constants
 import modules.flags as flags
 import modules.gradio_hijack as grh
 import modules.style_sorter as style_sorter
+import modules.prompt_style_system as prompt_style_system
 import modules.meta_parser
 import args_manager
 import copy
@@ -23,6 +24,8 @@ from modules.private_logger import get_current_html_path
 from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
+
+style_db = prompt_style_system.StyleDatabase(["styles.csv"])
 
 def get_task(*args):
     args = list(args)
@@ -623,33 +626,48 @@ with shared.gradio_root:
                     style_names=legal_style_names,
                     default_selected=modules.config.default_styles)
 
-                style_search_bar = gr.Textbox(show_label=False, container=False,
-                                              placeholder="\U0001F50E Type here to search styles ...",
-                                              value="",
-                                              label='Search Styles')
-                style_selections = gr.CheckboxGroup(show_label=False, container=False,
-                                                    choices=copy.deepcopy(style_sorter.all_styles),
-                                                    value=copy.deepcopy(modules.config.default_styles),
-                                                    label='Selected Styles',
-                                                    elem_classes=['style_selections'])
-                gradio_receiver_style_selections = gr.Textbox(elem_id='gradio_receiver_style_selections', visible=False)
+                csv_style = gr.Dropdown(label='CSV Styles', choices=list(style_db.styles.keys()), value='None')
+                apply_csv_style_btn = gr.Button(label='Apply CSV Style', variant='secondary')
 
-                shared.gradio_root.load(lambda: gr.update(choices=copy.deepcopy(style_sorter.all_styles)),
-                                        outputs=style_selections)
+                with gr.Accordion('Advanced', open=False):
+                    style_search_bar = gr.Textbox(show_label=False, container=False,
+                                                  placeholder="\U0001F50E Type here to search styles ...",
+                                                  value="",
+                                                  label='Search Styles')
+                    style_selections = gr.CheckboxGroup(show_label=False, container=False,
+                                                        choices=copy.deepcopy(style_sorter.all_styles),
+                                                        value=copy.deepcopy(modules.config.default_styles),
+                                                        label='Selected Styles',
+                                                        elem_classes=['style_selections'])
+                    gradio_receiver_style_selections = gr.Textbox(elem_id='gradio_receiver_style_selections', visible=False)
 
-                style_search_bar.change(style_sorter.search_styles,
-                                        inputs=[style_selections, style_search_bar],
-                                        outputs=style_selections,
-                                        queue=False,
-                                        show_progress=False).then(
-                    lambda: None, _js='()=>{refresh_style_localization();}')
+                    shared.gradio_root.load(lambda: gr.update(choices=copy.deepcopy(style_sorter.all_styles)),
+                                            outputs=style_selections)
 
-                gradio_receiver_style_selections.input(style_sorter.sort_styles,
-                                                       inputs=style_selections,
-                                                       outputs=style_selections,
-                                                       queue=False,
-                                                       show_progress=False).then(
-                    lambda: None, _js='()=>{refresh_style_localization();}')
+                    style_search_bar.change(style_sorter.search_styles,
+                                            inputs=[style_selections, style_search_bar],
+                                            outputs=style_selections,
+                                            queue=False,
+                                            show_progress=False).then(
+                        lambda: None, _js='()=>{refresh_style_localization();}')
+
+                    gradio_receiver_style_selections.input(style_sorter.sort_styles,
+                                                           inputs=style_selections,
+                                                           outputs=style_selections,
+                                                           queue=False,
+                                                           show_progress=False).then(
+                        lambda: None, _js='()=>{refresh_style_localization();}')
+
+                def on_apply_csv_style(style_name, pmt, neg_pmt):
+                    style = style_db.styles.get(style_name)
+                    if style:
+                        if style.prompt:
+                            pmt = prompt_style_system.merge_prompts(style.prompt, pmt)
+                        if style.negative_prompt:
+                            neg_pmt = prompt_style_system.merge_prompts(style.negative_prompt, neg_pmt)
+                    return pmt, neg_pmt
+
+                apply_csv_style_btn.click(on_apply_csv_style, inputs=[csv_style, prompt, negative_prompt], outputs=[prompt, negative_prompt], queue=False)
 
             with gr.Tab(label='Models'):
                 with gr.Group():
