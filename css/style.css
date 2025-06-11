@@ -409,6 +409,10 @@ div:has(> #positive_prompt) {
   display: none; /* remove this to enable tooltip in preview image */
 }
 
+.clear_styles_btn button {
+  padding: 0 8px;
+}
+
 #inpaint_canvas .canvas-tooltip-info {
   top: 2px;
 }
