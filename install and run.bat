@@ -9,8 +9,13 @@ if not exist "fooocus_env" (
 REM Activate the environment
 call fooocus_env\Scripts\activate.bat
 
-REM Upgrade pip and install required packages
+REM Upgrade pip
 python -m pip install --upgrade pip
+
+REM Install PyTorch with CUDA support following the official guide
+pip install torch==2.1.0 torchvision==0.16.0 --extra-index-url https://download.pytorch.org/whl/cu121
+
+REM Install the remaining required packages
 pip install -r requirements_versions.txt
 
 REM Launch Fooocus
