@@ -7,6 +7,7 @@ import modules.flags
 import ldm_patched.modules.model_management
 import ldm_patched.modules.latent_formats
 import modules.inpaint_worker
+import threading
 import extras.vae_interpose as vae_interpose
 from extras.expansion import FooocusExpansion
 
@@ -26,6 +27,12 @@ final_refiner_unet = None
 final_refiner_vae = None
 
 loaded_ControlNets = {}
+
+# internal synchronization primitives for background text encoder loading
+_text_encoder_lock = threading.Lock()
+_text_encoder_event = threading.Event()
+_text_encoder_event.set()  # initially set so waits do not block before first call
+_text_encoder_thread = None
 
 
 @torch.no_grad()
@@ -221,12 +228,35 @@ def clear_all_caches():
 @torch.no_grad()
 @torch.inference_mode()
 def prepare_text_encoder(async_call=True):
+    """Load text encoder models either synchronously or in a background thread."""
+
+    def _worker():
+        try:
+            with _text_encoder_lock:
+                assert_model_integrity()
+                ldm_patched.modules.model_management.load_models_gpu([
+                    final_clip.patcher,
+                    final_expansion.patcher,
+                ])
+        finally:
+            _text_encoder_event.set()
+
+    global _text_encoder_thread
+
     if async_call:
-        # TODO: make sure that this is always called in an async way so that users cannot feel it.
-        pass
-    assert_model_integrity()
-    ldm_patched.modules.model_management.load_models_gpu([final_clip.patcher, final_expansion.patcher])
+        if _text_encoder_thread is None or not _text_encoder_thread.is_alive():
+            _text_encoder_event.clear()
+            _text_encoder_thread = threading.Thread(target=_worker, daemon=True)
+            _text_encoder_thread.start()
+    else:
+        _text_encoder_event.clear()
+        _worker()
     return
+
+
+def wait_text_encoder_ready():
+    """Block until the text encoder loading thread has finished."""
+    _text_encoder_event.wait()
 
 
 @torch.no_grad()

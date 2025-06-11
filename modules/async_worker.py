@@ -1465,6 +1465,7 @@ def worker():
     while True:
         time.sleep(0.01)
         if len(async_tasks) > 0:
+            pipeline.wait_text_encoder_ready()
             task = async_tasks.pop(0)
 
             try:
