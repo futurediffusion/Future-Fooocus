@@ -3,6 +3,7 @@ import threading
 from extras.inpaint_mask import generate_mask_from_image, SAMOptions
 from modules.patch import PatchSettings, patch_settings, patch_all
 import modules.config
+import shared
 
 patch_all()
 
@@ -30,6 +31,13 @@ class AsyncTask:
         self.prompt = args.pop()
         self.negative_prompt = args.pop()
         self.style_selections = args.pop()
+        self.csv_styles = args.pop()
+        if self.csv_styles is None:
+            self.csv_styles = []
+        elif isinstance(self.csv_styles, str):
+            self.csv_styles = [self.csv_styles]
+        self.prompt = shared.prompt_styles.apply_styles_to_prompt(self.prompt, self.csv_styles)
+        self.negative_prompt = shared.prompt_styles.apply_negative_styles_to_prompt(self.negative_prompt, self.csv_styles)
 
         self.performance_selection = Performance(args.pop())
         self.steps = self.performance_selection.steps()
