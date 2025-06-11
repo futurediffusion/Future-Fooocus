@@ -557,28 +557,52 @@ with shared.gradio_root:
 
         with gr.Column(scale=1, visible=modules.config.default_advanced_checkbox) as advanced_column:
             with gr.Tab(label='Settings'):
-                if not args_manager.args.disable_preset_selection:
-                    preset_selection = gr.Dropdown(label='Preset',
-                                                   choices=modules.config.available_presets,
-                                                   value=args_manager.args.preset if args_manager.args.preset else "initial",
-                                                   interactive=True)
+                with gr.Accordion(label='Preset', open=False):
+                    if not args_manager.args.disable_preset_selection:
+                        preset_selection = gr.Dropdown(label='Preset',
+                                                       choices=modules.config.available_presets,
+                                                       value=args_manager.args.preset if args_manager.args.preset else "initial",
+                                                       interactive=True)
 
-                performance_selection = gr.Radio(label='Performance',
-                                                 choices=flags.Performance.values(),
-                                                 value=modules.config.default_performance,
-                                                 elem_classes=['performance_selection'])
+                    performance_selection = gr.Radio(label='Performance',
+                                                     choices=flags.Performance.values(),
+                                                     value=modules.config.default_performance,
+                                                     elem_classes=['performance_selection'])
 
+                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
+                                                       choices=modules.config.available_aspect_ratios_labels,
+                                                       value=modules.config.default_aspect_ratio,
+                                                       info='width × height',
+                                                       elem_classes='aspect_ratios')
+
+                    aspect_ratios_selection.change(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
+
+                with gr.Accordion(label='Advanced', open=False):
+                    negative_prompt = gr.Textbox(label='Negative Prompt', show_label=True, placeholder="Type prompt here.",
+                                                 info='Describing what you do not want to see.', lines=2,
+                                                 elem_id='negative_prompt',
+                                                 value=modules.config.default_prompt_negative)
+
+                    with gr.Row():
+                        image_seed = gr.Textbox(label='Seed', value=-1, max_lines=1)
+                        seed_dice = gr.Button(value='\U0001f3b2', elem_classes='refresh_button')
+                        seed_dice.click(lambda: -1, outputs=image_seed, queue=False, show_progress=False)
+
+                    sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
+                                               value=modules.config.default_sampler)
+                    scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
+                                                 value=modules.config.default_scheduler)
+
+                    guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
+                                               value=modules.config.default_cfg_scale,
+                                               info='Higher value means style is cleaner, vivider, and more artistic.')
 
                 output_format = gr.Radio(label='Output Format',
                                          choices=flags.OutputFormat.list(),
                                          value=modules.config.default_output_format)
-
-                negative_prompt = gr.Textbox(label='Negative Prompt', show_label=True, placeholder="Type prompt here.",
-                                             info='Describing what you do not want to see.', lines=2,
-                                             elem_id='negative_prompt',
-                                             value=modules.config.default_prompt_negative)
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
@@ -641,29 +665,6 @@ with shared.gradio_root:
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
             with gr.Tab(label='Advanced'):
-                with gr.Accordion(label='Aspect Ratios', open=False, elem_id='aspect_ratios_accordion') as aspect_ratios_accordion:
-                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
-                                                       choices=modules.config.available_aspect_ratios_labels,
-                                                       value=modules.config.default_aspect_ratio,
-                                                       info='width × height',
-                                                       elem_classes='aspect_ratios')
-
-                    aspect_ratios_selection.change(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
-
-                with gr.Row():
-                    image_seed = gr.Textbox(label='Seed', value=-1, max_lines=1)
-                    seed_dice = gr.Button(value='\U0001f3b2', elem_classes='refresh_button')
-                    seed_dice.click(lambda: -1, outputs=image_seed, queue=False, show_progress=False)
-
-                sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
-                                           value=modules.config.default_sampler)
-                scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
-                                             value=modules.config.default_scheduler)
-
-                guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
-                                           value=modules.config.default_cfg_scale,
-                                           info='Higher value means style is cleaner, vivider, and more artistic.')
                 sharpness = gr.Slider(label='Image Sharpness', minimum=0.0, maximum=30.0, step=0.001,
                                       value=modules.config.default_sample_sharpness,
                                       info='Higher value means image and texture are sharper.')
