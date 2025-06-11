@@ -1067,7 +1067,6 @@ def worker():
         return current_task_id, done_steps_inpainting, done_steps_upscaling, img, exception_result
 
     @torch.no_grad()
-    @torch.inference_mode()
     def handler(async_task: AsyncTask):
         preparation_start_time = time.perf_counter()
         async_task.processing = True
