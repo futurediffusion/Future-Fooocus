@@ -127,6 +127,36 @@ div:has(> #positive_prompt) {
     margin-left: -5px !important;
 }
 
+/* group titles and separators for aspect ratios */
+.aspect_ratios label:nth-child(1)::before {
+    content: 'Square';
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.aspect_ratios label:nth-child(3) {
+    border-top: 1px solid #ccc;
+    margin-top: 4px;
+}
+.aspect_ratios label:nth-child(3)::before {
+    content: 'Portrait';
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.aspect_ratios label:nth-child(7) {
+    border-top: 1px solid #ccc;
+    margin-top: 4px;
+}
+.aspect_ratios label:nth-child(7)::before {
+    content: 'Landscape';
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
 .lora_enable label {
   height: 100%;
 }
