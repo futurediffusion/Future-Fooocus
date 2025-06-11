@@ -619,7 +619,9 @@ with shared.gradio_root:
                 shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
 
             with gr.Tab(label='Styles'):
-                style_selections = gr.State([])
+                from modules import ui_prompt_styles as ui_styles
+                ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
+                style_selections = ui_styles_comp.dropdown
                 csv_style = gr.State(None)
 
             with gr.Tab(label='Models'):
