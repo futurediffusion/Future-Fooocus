@@ -31,7 +31,22 @@ def get_task(*args):
     args = list(args)
     args.pop(0)
 
-    return worker.AsyncTask(args=args)
+    generate_image_grid = args.pop(0)
+    prompt_val = args.pop(0)
+    negative_prompt_val = args.pop(0)
+    style_selections_val = args.pop(0)
+    csv_styles_val = args.pop(0)
+
+    if isinstance(csv_styles_val, str):
+        csv_styles_val = [] if csv_styles_val == '' else [csv_styles_val]
+    csv_styles_val = csv_styles_val or []
+    if not isinstance(style_selections_val, list):
+        style_selections_val = list(style_selections_val) if style_selections_val else []
+
+    style_selections_val = list(dict.fromkeys(style_selections_val + csv_styles_val))
+
+    new_args = [generate_image_grid, prompt_val, negative_prompt_val, style_selections_val] + args
+    return worker.AsyncTask(args=new_args)
 
 def generate_clicked(task: worker.AsyncTask):
     import ldm_patched.modules.model_management as model_management
@@ -626,8 +641,8 @@ with shared.gradio_root:
                     style_names=legal_style_names,
                     default_selected=modules.config.default_styles)
 
-                csv_style = gr.Dropdown(label='CSV Styles', choices=list(style_db.styles.keys()), value='None')
-                apply_csv_style_btn = gr.Button(label='Apply CSV Style', variant='secondary')
+                csv_style = gr.Dropdown(label='CSV Styles', choices=list(style_db.styles.keys()), value=[], multiselect=True)
+                clear_styles_btn = gr.Button(value='❌ Clear Styles', variant='secondary', elem_classes='clear_styles_btn')
 
                 with gr.Accordion('Advanced', open=False):
                     style_search_bar = gr.Textbox(show_label=False, container=False,
@@ -658,16 +673,7 @@ with shared.gradio_root:
                                                            show_progress=False).then(
                         lambda: None, _js='()=>{refresh_style_localization();}')
 
-                def on_apply_csv_style(style_name, pmt, neg_pmt):
-                    style = style_db.styles.get(style_name)
-                    if style:
-                        if style.prompt:
-                            pmt = prompt_style_system.merge_prompts(style.prompt, pmt)
-                        if style.negative_prompt:
-                            neg_pmt = prompt_style_system.merge_prompts(style.negative_prompt, neg_pmt)
-                    return pmt, neg_pmt
-
-                apply_csv_style_btn.click(on_apply_csv_style, inputs=[csv_style, prompt, negative_prompt], outputs=[prompt, negative_prompt], queue=False)
+                clear_styles_btn.click(lambda: [[], []], None, [style_selections, csv_style], queue=False)
 
             with gr.Tab(label='Models'):
                 with gr.Group():
@@ -906,7 +912,7 @@ with shared.gradio_root:
 
         state_is_generating = gr.State(False)
 
-        load_data_outputs = [advanced_checkbox, image_number, prompt, negative_prompt, style_selections,
+        load_data_outputs = [advanced_checkbox, image_number, prompt, negative_prompt, style_selections, csv_style,
                              performance_selection, overwrite_step, overwrite_switch, aspect_ratios_selection,
                              overwrite_width, overwrite_height, guidance_scale, sharpness, adm_scaler_positive,
                              adm_scaler_negative, adm_scaler_end, refiner_swap_method, adaptive_cfg, clip_skip,
@@ -994,7 +1000,7 @@ with shared.gradio_root:
 
         ctrls = [currentTask, generate_image_grid]
         ctrls += [
-            prompt, negative_prompt, style_selections,
+            prompt, negative_prompt, style_selections, csv_style,
             performance_selection, aspect_ratios_selection, image_number, output_format, image_seed,
             read_wildcards_in_order, sharpness, guidance_scale
         ]

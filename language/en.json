@@ -310,6 +310,8 @@
     "SDXL LoRA 5": "SDXL LoRA 5",
     "Refresh": "Refresh",
     "\ud83d\udd04 Refresh All Files": "\ud83d\udd04 Refresh All Files",
+    "CSV Styles": "CSV Styles",
+    "Clear Styles": "Clear Styles",
     "Sampling Sharpness": "Sampling Sharpness",
     "Higher value means image and texture are sharper.": "Higher value means image and texture are sharper.",
     "Guidance Scale": "Guidance Scale",
