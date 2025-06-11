@@ -27,6 +27,15 @@ def apply_styles_to_prompt(prompt: str, styles: list[str]) -> str:
     return prompt
 
 
+def apply_negative_styles_to_prompt(prompt: str, styles: list[str]) -> str:
+    """Apply negative styles to *prompt*.
+
+    This is functionally identical to :func:`apply_styles_to_prompt` but
+    exists for semantic clarity when handling negative prompts.
+    """
+    return apply_styles_to_prompt(prompt, styles)
+
+
 def extract_style_text_from_prompt(style_text: str, prompt: str):
     stripped_prompt = prompt.strip()
     stripped_style_text = style_text.strip()
