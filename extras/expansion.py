@@ -79,7 +79,6 @@ class FooocusExpansion:
         print(f'Fooocus Expansion engine loaded for {load_device}, use_fp16 = {use_fp16}.')
 
     @torch.no_grad()
-    @torch.inference_mode()
     def logits_processor(self, input_ids, scores):
         assert scores.ndim == 2 and scores.shape[0] == 1
         self.logits_bias = self.logits_bias.to(scores)
@@ -91,7 +90,6 @@ class FooocusExpansion:
         return scores + bias
 
     @torch.no_grad()
-    @torch.inference_mode()
     def __call__(self, prompt, seed):
         if prompt == '':
             return ''
