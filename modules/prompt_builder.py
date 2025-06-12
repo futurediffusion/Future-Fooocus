@@ -4,45 +4,46 @@ import shared
 from modules import config
 
 
-def generar_prompt(characters, names, lora_enable, lora_model, lora_weight,
-                   angle, expression, pose, background, styles, negative_styles):
-    names_part = ', '.join([n.strip() for n in names.split(',') if n.strip()]) if names else ''
+def generar_prompt(personajes, nombres, lora_enable, lora_model, lora_weight,
+                   angulo, expresion, pose, fondo, estilos, estilos_negativos):
+    nombres_part = ', '.join([n.strip() for n in nombres.split(',') if n.strip()]) if nombres else ''
 
     lora_part = ''
     if lora_enable and lora_model != 'None':
         lora_part = f"<lora:{lora_model}:{lora_weight}>"
 
     base_prompt = join_prompts(
-        characters,
-        names_part,
+        personajes,
+        nombres_part,
         lora_part,
-        angle,
-        expression,
+        angulo,
+        expresion,
         pose,
-        background,
+        fondo,
     )
 
-    base_prompt = shared.prompt_styles.apply_styles_to_prompt(base_prompt, styles)
-    negative = shared.prompt_styles.apply_negative_styles_to_prompt('', negative_styles)
+    base_prompt = shared.prompt_styles.apply_styles_to_prompt(base_prompt, estilos)
+    negativo = shared.prompt_styles.apply_negative_styles_to_prompt('', estilos_negativos)
 
-    return gr.Textbox.update(value=base_prompt), gr.Textbox.update(value=negative)
+    return gr.Textbox.update(value=base_prompt), gr.Textbox.update(value=negativo)
 
 
 def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
-    with gr.Accordion(label='Prompt Builder', open=False, elem_id=f"{tabname}_prompt_builder"):
+    with gr.Box(elem_id=f"{tabname}_prompt_builder"):
+        gr.Markdown("### Prompt Builder")
         with gr.Row():
-            characters = gr.Dropdown(
-                label="Characters",
+            personajes = gr.Dropdown(
+                label="Personajes",
                 choices=['1girl', '1boy', '2girls', '2boys'],
                 value='1girl'
             )
-            angle = gr.Dropdown(
-                label="Angle",
-                choices=['front view', 'side view', '3/4 view', 'from above', 'from below', 'POV'],
-                value='front view'
+            angulo = gr.Dropdown(
+                label="Ángulo",
+                choices=['frontal', 'lateral', '3/4 view', 'desde arriba', 'desde abajo', 'pov'],
+                value='frontal'
             )
         with gr.Row():
-            names = gr.Textbox(label='Names')
+            nombres = gr.Textbox(label='Nombres')
         with gr.Row():
             lora_enable = gr.Checkbox(label='LoRA Enable', value=False)
             lora_model = gr.Dropdown(
@@ -58,47 +59,47 @@ def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
                 value=1.0
             )
         with gr.Row():
-            expressions = gr.Dropdown(
-                label='Expressions',
-                choices=['happy', 'sad', 'angry', 'surprised', 'thoughtful'],
-                value='happy'
+            expresiones = gr.Dropdown(
+                label='Expresiones',
+                choices=['feliz', 'triste', 'enojado', 'sorprendido', 'pensativo'],
+                value='feliz'
             )
             poses = gr.Dropdown(
                 label='Poses',
-                choices=['standing', 'sitting', 'running', 'jumping', 'lying down'],
-                value='standing'
+                choices=['de pie', 'sentado', 'corriendo', 'saltando', 'acostado'],
+                value='de pie'
             )
         with gr.Row():
-            background = gr.Dropdown(
-                label='Background',
-                choices=['forest', 'beach', 'city', 'indoor', 'space'],
-                value='forest'
+            fondo = gr.Dropdown(
+                label='Fondo',
+                choices=['bosque', 'playa', 'ciudad', 'interior', 'espacio'],
+                value='bosque'
             )
         with gr.Row():
-            styles = gr.Dropdown(label='Styles', choices=list(shared.prompt_styles.styles), multiselect=True)
-            negative_styles = gr.Dropdown(label='Negative Styles', choices=list(shared.prompt_styles.styles), multiselect=True)
+            estilos = gr.Dropdown(label='Estilos', choices=list(shared.prompt_styles.styles), multiselect=True)
+            estilos_negativos = gr.Dropdown(label='Estilos negativos', choices=list(shared.prompt_styles.styles), multiselect=True)
         with gr.Row():
-            generate = gr.Button('Generate')
+            generar = gr.Button('Generar')
 
-        generate.click(
+        generar.click(
             fn=generar_prompt,
-            inputs=[characters, names, lora_enable, lora_model, lora_weight,
-                    angle, expressions, poses, background, styles, negative_styles],
+            inputs=[personajes, nombres, lora_enable, lora_model, lora_weight,
+                    angulo, expresiones, poses, fondo, estilos, estilos_negativos],
             outputs=[main_prompt, main_negative],
             show_progress=False,
         )
 
     return {
-        'characters': characters,
-        'names': names,
+        'personajes': personajes,
+        'nombres': nombres,
         'lora_enable': lora_enable,
         'lora_model': lora_model,
         'lora_weight': lora_weight,
-        'angle': angle,
-        'expressions': expressions,
+        'angulo': angulo,
+        'expresiones': expresiones,
         'poses': poses,
-        'background': background,
-        'styles': styles,
-        'negative_styles': negative_styles,
-        'generate': generate,
+        'fondo': fondo,
+        'estilos': estilos,
+        'estilos_negativos': estilos_negativos,
+        'generar': generar,
     }
