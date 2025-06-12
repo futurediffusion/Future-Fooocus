@@ -32,6 +32,11 @@ class AsyncTask:
         self.prompt = args.pop()
         self.negative_prompt = args.pop()
         self.style_selections = args.pop()
+        if self.style_selections is None:
+            self.style_selections = []
+        elif isinstance(self.style_selections, str):
+            self.style_selections = [self.style_selections]
+
         self.csv_styles = args.pop()
         if self.csv_styles is None:
             self.csv_styles = []
