@@ -102,6 +102,7 @@ if config.temp_path_cleanup_on_launch:
 
 def download_models(default_model, previous_default_models, checkpoint_downloads, embeddings_downloads, lora_downloads, vae_downloads):
     from modules.util import get_file_from_folder_list
+    interactive = sys.stdin.isatty()
 
     for file_name, url in vae_approx_filenames:
         load_file_from_url(url=url, model_dir=config.path_vae_approx, file_name=file_name)
@@ -127,6 +128,12 @@ def download_models(default_model, previous_default_models, checkpoint_downloads
                     checkpoint_downloads = {}
                     default_model = alternative_model_name
                     break
+
+    if interactive and (checkpoint_downloads or embeddings_downloads or lora_downloads or vae_downloads):
+        ans = input('Download required models now? [y/N]: ').strip().lower()
+        if ans not in ('y', 'yes'):
+            print('Skipped model download.')
+            return default_model, checkpoint_downloads
 
     for file_name, url in checkpoint_downloads.items():
         model_dir = os.path.dirname(get_file_from_folder_list(file_name, config.paths_checkpoints))
