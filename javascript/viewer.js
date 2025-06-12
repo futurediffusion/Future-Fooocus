@@ -98,7 +98,7 @@ onUiLoaded(async () => {
                         let text = span.textContent;
                         span.textContent = '';
                         span.classList.add(g.cls);
-                        label.appendChild(document.createTextNode(text));
+                        label.insertBefore(document.createTextNode(text), span);
                     }
                     grp.appendChild(label);
                 } else {
