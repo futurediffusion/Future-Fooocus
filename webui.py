@@ -580,12 +580,12 @@ with shared.gradio_root:
 
                 with gr.Accordion(label='Advanced', open=False):
 
-                    with gr.Row():
-                        image_seed = gr.Textbox(label='Seed', value=-1, max_lines=1)
-                        seed_dice = gr.Button(value='\U0001f3b2', elem_classes='seed_button')
-                        seed_restore = gr.Button(value='\U0001F519', elem_classes='seed_button')
-                        seed_dice.click(lambda: -1, outputs=image_seed, queue=False, show_progress=False)
-                        seed_restore.click(lambda x: x, inputs=seed_actual, outputs=image_seed, queue=False, show_progress=False)
+                    with gr.Row(elem_id="seed-container"):
+                        seed_input = gr.Number(label="Seed", value=-1, elem_id="seed-input")
+                        dice_btn = gr.Button("\U0001f3b2", elem_id="dice-btn")
+                        back_btn = gr.Button("\u2190 BACK", elem_id="back-btn")
+                        dice_btn.click(lambda: -1, outputs=seed_input, queue=False, show_progress=False)
+                        back_btn.click(lambda x: x, inputs=seed_actual, outputs=seed_input, queue=False, show_progress=False)
 
                     sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
                                                value=modules.config.default_sampler)
@@ -894,7 +894,7 @@ with shared.gradio_root:
                              overwrite_width, overwrite_height, guidance_scale, sharpness, adm_scaler_positive,
                              adm_scaler_negative, adm_scaler_end, refiner_swap_method, adaptive_cfg, clip_skip,
                              base_model, refiner_model, refiner_switch, sampler_name, scheduler_name, vae_name,
-                             image_seed, inpaint_engine, inpaint_engine_state,
+                             seed_input, inpaint_engine, inpaint_engine_state,
                              inpaint_mode] + enhance_inpaint_mode_ctrls + [generate_button,
                              load_parameter_button] + freeu_ctrls + lora_ctrls
 
@@ -1041,7 +1041,7 @@ with shared.gradio_root:
 
         generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True),
                               outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating]) \
-            .then(fn=prepare_seed, inputs=image_seed, outputs=[seed_actual, image_seed]) \
+            .then(fn=prepare_seed, inputs=seed_input, outputs=[seed_actual, seed_input]) \
             .then(fn=get_task, inputs=ctrls, outputs=currentTask) \
             .then(fn=generate_clicked, inputs=currentTask, outputs=[progress_html, progress_window, progress_gallery, gallery]) \
             .then(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), gr.update(visible=False, interactive=False), False),
