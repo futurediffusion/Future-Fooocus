@@ -32,6 +32,13 @@ def get_task(*args):
     # `AsyncTask` receives the expected sequence of parameters only.
     args = args[2:]
 
+    # The first argument after the seeds is the current AsyncTask
+    # state.  It is not part of the parameters consumed by
+    # ``AsyncTask`` so remove it as well to keep the remaining values
+    # in the expected order.
+    if args:
+        args = args[1:]
+
     return worker.AsyncTask(args=args)
 
 def generate_clicked(task: worker.AsyncTask):
