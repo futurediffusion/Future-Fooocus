@@ -1,6 +1,6 @@
 @echo off
 REM Batch file to set up the environment, install dependencies, and run Fooocus
-
+git pull
 REM Create a Python virtual environment if it does not exist
 if not exist "fooocus_env" (
     python -m venv fooocus_env
