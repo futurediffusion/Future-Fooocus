@@ -119,9 +119,37 @@ div:has(> #positive_prompt) {
     flex: calc(50% - 5px) !important;
 }
 
-.aspect_ratios label span {
-    white-space: nowrap !important;
+.aspect_ratios label:nth-child(n+3):nth-child(-n+6) {
+    flex: calc(25% - 5px) !important;
 }
+
+/* shape for ratio buttons */
+.aspect_ratios label span {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap !important;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 4px;
+    padding: 4px 2px;
+}
+
+.aspect_ratios label:nth-child(1) span,
+.aspect_ratios label:nth-child(2) span {
+    aspect-ratio: 1 / 1;
+    width: 60px;
+}
+
+.aspect_ratios label:nth-child(n+3):nth-child(-n+6) span {
+    aspect-ratio: 2 / 3;
+    width: 40px;
+}
+
+.aspect_ratios label:nth-child(n+7) span {
+    aspect-ratio: 3 / 2;
+    width: 60px;
+}
+
 
 .aspect_ratios label input {
     margin-left: 0 !important;

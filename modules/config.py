@@ -768,8 +768,7 @@ def add_ratio(x):
     a, b = x.replace('*', ' ').split(' ')[:2]
     a, b = int(a), int(b)
     g = math.gcd(a, b)
-    orientation = 'Square' if a == b else ('Portrait' if a < b else 'Landscape')
-    return f'{a}×{b} <span style="color: grey;">{orientation} \U00002223 {a // g}:{b // g}</span>'
+    return f'{a}×{b} <span style="color: grey;">\u2223 {a // g}:{b // g}</span>'
 
 
 default_aspect_ratio = add_ratio(default_aspect_ratio)
