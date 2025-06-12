@@ -5,7 +5,7 @@ from modules import config
 
 
 def generar_prompt(characters, names, lora_enable, lora_model, lora_weight,
-                   angle, expression, pose, background, styles, negative_styles):
+                   angle, expression, pose, background):
     names_part = ', '.join([n.strip() for n in names.split(',') if n.strip()]) if names else ''
 
     lora_part = ''
@@ -22,10 +22,7 @@ def generar_prompt(characters, names, lora_enable, lora_model, lora_weight,
         background,
     )
 
-    base_prompt = shared.prompt_styles.apply_styles_to_prompt(base_prompt, styles)
-    negative = shared.prompt_styles.apply_negative_styles_to_prompt('', negative_styles)
-
-    return gr.Textbox.update(value=base_prompt), gr.Textbox.update(value=negative)
+    return gr.Textbox.update(value=base_prompt), gr.Textbox.update(value='')
 
 
 def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
@@ -75,15 +72,12 @@ def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
                 value='forest'
             )
         with gr.Row():
-            styles = gr.Dropdown(label='Styles', choices=list(shared.prompt_styles.styles), multiselect=True)
-            negative_styles = gr.Dropdown(label='Negative Styles', choices=list(shared.prompt_styles.styles), multiselect=True)
-        with gr.Row():
             generate = gr.Button('Generate')
 
         generate.click(
             fn=generar_prompt,
             inputs=[characters, names, lora_enable, lora_model, lora_weight,
-                    angle, expressions, poses, background, styles, negative_styles],
+                    angle, expressions, poses, background],
             outputs=[main_prompt, main_negative],
             show_progress=False,
         )
@@ -98,7 +92,5 @@ def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
         'expressions': expressions,
         'poses': poses,
         'background': background,
-        'styles': styles,
-        'negative_styles': negative_styles,
         'generate': generate,
     }
