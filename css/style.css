@@ -133,7 +133,7 @@ div:has(> #positive_prompt) {
     padding: 4px 2px;
 }
 
-.aspect_ratios label span::after {
+.aspect_ratios label > span::after {
     content: '';
     display: inline-block;
     margin-left: 4px;
@@ -142,16 +142,16 @@ div:has(> #positive_prompt) {
     border-radius: 2px;
 }
 
-.aspect_ratios label:nth-child(1) span::after,
-.aspect_ratios label:nth-child(2) span::after {
+.aspect_ratios label:nth-child(1) > span::after,
+.aspect_ratios label:nth-child(2) > span::after {
     aspect-ratio: 1 / 1;
 }
 
-.aspect_ratios label:nth-child(n+3):nth-child(-n+6) span::after {
+.aspect_ratios label:nth-child(n+3):nth-child(-n+6) > span::after {
     aspect-ratio: 2 / 3;
 }
 
-.aspect_ratios label:nth-child(n+7) span::after {
+.aspect_ratios label:nth-child(n+7) > span::after {
     aspect-ratio: 3 / 2;
 }
 
