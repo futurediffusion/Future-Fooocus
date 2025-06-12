@@ -12,16 +12,7 @@ class PromptStyle(typing.NamedTuple):
     path: str | None = None
 
 
-def merge_prompts(style_prompt: typing.Any, prompt: typing.Any) -> str:
-    """Merge *prompt* with *style_prompt* safely.
-
-    This helper now accepts any type for ``style_prompt`` and ``prompt`` and
-    gracefully ignores non-string values instead of raising an exception.
-    """
-
-    prompt = prompt if isinstance(prompt, str) else ""
-    style_prompt = style_prompt if isinstance(style_prompt, str) else ""
-
+def merge_prompts(style_prompt: str, prompt: str) -> str:
     if "{prompt}" in style_prompt:
         res = style_prompt.replace("{prompt}", prompt)
     else:
