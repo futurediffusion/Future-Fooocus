@@ -135,33 +135,34 @@ div:has(> #positive_prompt) {
 }
 
 /* ratio text with small icon */
-.aspect_ratios label span {
-    display: inline-flex !important;
+
+/* visual icon container */
+.aspect_ratios_group label span {
+    border-radius: 6px;
+    border: 1px solid #444;
+    background-color: #222;
+    margin-left: auto;
+    display: inline-flex;
+    justify-content: center;
     align-items: center;
-    white-space: nowrap !important;
-    padding: 4px 2px;
+    min-width: 36px;
+    min-height: 36px;
 }
 
-.aspect_ratios label > span::after {
-    content: '';
-    display: inline-block;
-    margin-left: 4px;
-    width: 12px;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 2px;
+/* shape variations */
+.square-ratio {
+  width: 48px;
+  aspect-ratio: 1 / 1;
 }
 
-.aspect_ratios label:nth-child(1) > span::after,
-.aspect_ratios label:nth-child(2) > span::after {
-    aspect-ratio: 1 / 1;
+.portrait-ratio {
+  width: 36px;
+  aspect-ratio: 5 / 12;
 }
 
-.aspect_ratios label:nth-child(n+3):nth-child(-n+6) > span::after {
-    aspect-ratio: 2 / 3;
-}
-
-.aspect_ratios label:nth-child(n+7) > span::after {
-    aspect-ratio: 3 / 2;
+.landscape-ratio {
+  width: 64px;
+  aspect-ratio: 12 / 5;
 }
 
 
