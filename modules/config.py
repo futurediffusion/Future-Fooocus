@@ -74,11 +74,6 @@ def try_load_deprecated_user_path_config():
         replace_config('fooocus_expansion_path', 'path_fooocus_expansion')
         replace_config('temp_outputs_path', 'path_outputs')
 
-        if deprecated_config_dict.get("default_model", None) == 'juggernautXL_version6Rundiffusion.safetensors':
-            os.replace('user_path_config.txt', 'user_path_config-deprecated.txt')
-            print('Config updated successfully in silence. '
-                  'A backup of previous config is written to "user_path_config-deprecated.txt".')
-            return
 
         if input("Newer models and configs are available. "
                  "Download and update files? [Y/n]:") in ['n', 'N', 'No', 'no', 'NO']:

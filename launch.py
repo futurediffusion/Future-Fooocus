@@ -100,7 +100,7 @@ if config.temp_path_cleanup_on_launch:
         print(f"[Cleanup] Failed to delete content of temp dir.")
 
 
-def download_models(default_model, previous_default_models, checkpoint_downloads, embeddings_downloads, lora_downloads, vae_downloads):
+def download_models(default_model, checkpoint_downloads, embeddings_downloads, lora_downloads, vae_downloads):
     from modules.util import get_file_from_folder_list
 
     for file_name, url in vae_approx_filenames:
@@ -116,17 +116,10 @@ def download_models(default_model, previous_default_models, checkpoint_downloads
         print('Skipped model download.')
         return default_model, checkpoint_downloads
 
-    if not args.always_download_new_model:
-        if not os.path.isfile(get_file_from_folder_list(default_model, config.paths_checkpoints)):
-            for alternative_model_name in previous_default_models:
-                if os.path.isfile(get_file_from_folder_list(alternative_model_name, config.paths_checkpoints)):
-                    print(f'You do not have [{default_model}] but you have [{alternative_model_name}].')
-                    print(f'Fooocus will use [{alternative_model_name}] to avoid downloading new models, '
-                          f'but you are not using the latest models.')
-                    print('Use --always-download-new-model to avoid fallback and always get new models.')
-                    checkpoint_downloads = {}
-                    default_model = alternative_model_name
-                    break
+
+    if not args.always_download_new_model and not os.path.isfile(
+            get_file_from_folder_list(default_model, config.paths_checkpoints)):
+        print(f'[{default_model}] is not found locally and will be downloaded.')
 
     for file_name, url in checkpoint_downloads.items():
         model_dir = os.path.dirname(get_file_from_folder_list(file_name, config.paths_checkpoints))
@@ -143,7 +136,7 @@ def download_models(default_model, previous_default_models, checkpoint_downloads
 
 
 config.default_base_model_name, config.checkpoint_downloads = download_models(
-    config.default_base_model_name, config.previous_default_models, config.checkpoint_downloads,
+    config.default_base_model_name, config.checkpoint_downloads,
     config.embeddings_downloads, config.lora_downloads, config.vae_downloads)
 
 config.update_files()
