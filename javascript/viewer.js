@@ -77,9 +77,9 @@ onUiLoaded(async () => {
         let labels = Array.from(aspectContainer.querySelectorAll('label'));
         aspectContainer.innerHTML = '';
         const groups = [
-            {title: 'Square', count: 2},
-            {title: 'Portrait', count: 4},
-            {title: 'Landscape', count: labels.length - 6}
+            {title: 'Square', count: 2, cls: 'square-ratio'},
+            {title: 'Portrait', count: 4, cls: 'portrait-ratio'},
+            {title: 'Landscape', count: labels.length - 6, cls: 'landscape-ratio'}
         ];
         let idx = 0;
         groups.forEach(g => {
@@ -92,7 +92,15 @@ onUiLoaded(async () => {
             grp.appendChild(title);
             for (let i = 0; i < g.count; i++) {
                 if (labels[idx]) {
-                    grp.appendChild(labels[idx]);
+                    let label = labels[idx];
+                    let span = label.querySelector('span');
+                    if (span) {
+                        let text = span.textContent;
+                        span.textContent = '';
+                        span.classList.add(g.cls);
+                        label.appendChild(document.createTextNode(text));
+                    }
+                    grp.appendChild(label);
                 } else {
                     let blank = document.createElement('div');
                     blank.style.flex = '0 0 calc(50% - 5px)';
