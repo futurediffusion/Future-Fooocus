@@ -17,7 +17,12 @@ def get_current_html_path(output_format=None):
     output_format = output_format if output_format else modules.config.default_output_format
     date_string, local_temp_filename, only_name = generate_temp_filename(folder=modules.config.path_outputs,
                                                                          extension=output_format)
-    html_name = os.path.join(os.path.dirname(local_temp_filename), 'log.html')
+    output_dir = os.path.dirname(local_temp_filename)
+    html_name = os.path.join(output_dir, 'log.html')
+    os.makedirs(output_dir, exist_ok=True)
+    if not os.path.exists(html_name):
+        with open(html_name, 'w', encoding='utf-8') as f:
+            f.write("<!DOCTYPE html><html><body></body></html>")
     return html_name
 
 

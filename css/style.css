@@ -402,7 +402,10 @@ div:has(> #positive_prompt) {
 }
 
 #history_button {
-  width: 100%;
-  font-size: 32px;
+  width: fit-content;
+  font-size: 20px;
   border-radius: 8px;
+  padding: 8px 16px;
+  background: #808080;
+  color: white;
 }

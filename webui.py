@@ -618,8 +618,10 @@ with shared.gradio_root:
                 def update_history_link():
                     if args_manager.args.disable_image_log:
                         return gr.update(value='')
-
-                    return gr.update(value=f'<button id="history_button" class="type_row" onclick="window.open(\'file={get_current_html_path(output_format)}\', \'_blank\')">\U0001F4DA History Log</button>')
+                    path = get_current_html_path(output_format)
+                    if os.path.exists(path):
+                        return gr.update(value=f'<button id="history_button" onclick="window.open(\'file={path}\', \'_blank\')">\U0001F4DA History Log</button>')
+                    return gr.update(value='')
 
                 def refresh_seed(seed_string):
                     try:
