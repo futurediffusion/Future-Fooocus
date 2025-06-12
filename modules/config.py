@@ -820,6 +820,21 @@ def update_files():
     return
 
 
+def persist_config() -> None:
+    """Write the current configuration dictionary to ``config_path``."""
+    with open(config_path, "w", encoding="utf-8") as json_file:
+        json.dump({k: config_dict[k] for k in always_save_keys}, json_file, indent=4)
+
+
+def set_config_value(key: str, value) -> None:
+    """Update ``config_dict`` and persist the change."""
+    global config_dict
+    config_dict[key] = value
+    if key not in always_save_keys:
+        always_save_keys.append(key)
+    persist_config()
+
+
 def downloading_inpaint_models(v):
     assert v in modules.flags.inpaint_engine_versions
 
