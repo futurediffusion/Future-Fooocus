@@ -775,6 +775,26 @@ default_aspect_ratio = add_ratio(default_aspect_ratio)
 available_aspect_ratios_labels = [add_ratio(x) for x in available_aspect_ratios]
 
 
+def split_aspect_ratios(ratios):
+    square = []
+    portrait = []
+    landscape = []
+    for r in ratios:
+        w, h = r.split('*')[:2]
+        w, h = int(w), int(h)
+        label = add_ratio(r)
+        if w == h:
+            square.append(label)
+        elif w < h:
+            portrait.append(label)
+        else:
+            landscape.append(label)
+    return square, portrait, landscape
+
+
+aspect_ratio_square_labels, aspect_ratio_portrait_labels, aspect_ratio_landscape_labels = split_aspect_ratios(available_aspect_ratios)
+
+
 # Only write config in the first launch.
 if not os.path.exists(config_path):
     with open(config_path, "w", encoding="utf-8") as json_file:
