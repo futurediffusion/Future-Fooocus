@@ -124,7 +124,8 @@ div:has(> #positive_prompt) {
 }
 
 .aspect_ratios label input {
-    margin-left: -5px !important;
+    margin-left: 0 !important;
+    margin-right: 4px !important;
 }
 
 /* group titles and separators for aspect ratios */
@@ -387,4 +388,15 @@ div:has(> #positive_prompt) {
   height: 30px;
   padding: 0;
   min-width: 30px;
+}
+
+/* style for seed dice and restore buttons */
+.seed_button {
+  background: #eee !important;
+  border: 1px solid #aaa !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  min-width: 30px !important;
+  border-radius: 4px;
 }

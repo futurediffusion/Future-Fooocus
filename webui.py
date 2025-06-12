@@ -155,6 +155,7 @@ shared.gradio_root = gr.Blocks(title=title).queue()
 with shared.gradio_root:
     currentTask = gr.State(worker.AsyncTask(args=[]))
     inpaint_engine_state = gr.State('empty')
+    seed_actual = gr.State(-1)
     with gr.Row():
         with gr.Column(scale=2):
             with gr.Row():
@@ -557,6 +558,22 @@ with shared.gradio_root:
 
         with gr.Column(scale=1, visible=modules.config.default_advanced_checkbox) as advanced_column:
             with gr.Tab(label='Settings'):
+
+                negative_prompt = gr.Textbox(label='Negative Prompt', show_label=True, placeholder="Type prompt here.",
+                                             info='Describing what you do not want to see.', lines=2,
+                                             elem_id='negative_prompt',
+                                             value=modules.config.default_prompt_negative)
+
+                with gr.Accordion(label='Aspect Ratios', open=False):
+                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
+                                                       choices=modules.config.available_aspect_ratios_labels,
+                                                       value=modules.config.default_aspect_ratio,
+                                                       info='width × height',
+                                                       elem_classes='aspect_ratios')
+
+                    aspect_ratios_selection.change(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+
                 with gr.Accordion(label='Preset', open=False):
                     if not args_manager.args.disable_preset_selection:
                         preset_selection = gr.Dropdown(label='Preset',
@@ -569,27 +586,16 @@ with shared.gradio_root:
                                                      value=modules.config.default_performance,
                                                      elem_classes=['performance_selection'])
 
-                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
-                                                       choices=modules.config.available_aspect_ratios_labels,
-                                                       value=modules.config.default_aspect_ratio,
-                                                       info='width × height',
-                                                       elem_classes='aspect_ratios')
-
-                    aspect_ratios_selection.change(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
-
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
 
                 with gr.Accordion(label='Advanced', open=False):
-                    negative_prompt = gr.Textbox(label='Negative Prompt', show_label=True, placeholder="Type prompt here.",
-                                                 info='Describing what you do not want to see.', lines=2,
-                                                 elem_id='negative_prompt',
-                                                 value=modules.config.default_prompt_negative)
 
                     with gr.Row():
                         image_seed = gr.Textbox(label='Seed', value=-1, max_lines=1)
-                        seed_dice = gr.Button(value='\U0001f3b2', elem_classes='refresh_button')
+                        seed_dice = gr.Button(value='\U0001f3b2', elem_classes='seed_button')
+                        seed_restore = gr.Button(value='\U0001F519', elem_classes='seed_button')
                         seed_dice.click(lambda: -1, outputs=image_seed, queue=False, show_progress=False)
+                        seed_restore.click(lambda x: x, inputs=seed_actual, outputs=image_seed, queue=False, show_progress=False)
 
                     sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
                                                value=modules.config.default_sampler)
@@ -620,6 +626,15 @@ with shared.gradio_root:
                     except ValueError:
                         pass
                     return random.randint(constants.MIN_SEED, constants.MAX_SEED)
+
+                def prepare_seed(seed_string):
+                    seed_value = refresh_seed(seed_string)
+                    try:
+                        if int(seed_string) == -1:
+                            return seed_value, -1
+                    except ValueError:
+                        pass
+                    return seed_value, seed_value
 
                 history_link = gr.HTML()
                 shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
@@ -947,7 +962,7 @@ with shared.gradio_root:
         ctrls = [currentTask, generate_image_grid]
         ctrls += [
             prompt, negative_prompt, style_selections, csv_style,
-            performance_selection, aspect_ratios_selection, image_number, output_format, image_seed,
+            performance_selection, aspect_ratios_selection, image_number, output_format, seed_actual,
             read_wildcards_in_order, sharpness, guidance_scale
         ]
 
@@ -1009,7 +1024,7 @@ with shared.gradio_root:
 
         generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True),
                               outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating]) \
-            .then(fn=refresh_seed, inputs=image_seed, outputs=image_seed) \
+            .then(fn=prepare_seed, inputs=image_seed, outputs=[seed_actual, image_seed]) \
             .then(fn=get_task, inputs=ctrls, outputs=currentTask) \
             .then(fn=generate_clicked, inputs=currentTask, outputs=[progress_html, progress_window, progress_gallery, gallery]) \
             .then(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), gr.update(visible=False, interactive=False), False),
