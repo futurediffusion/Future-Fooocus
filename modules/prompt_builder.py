@@ -1,20 +1,25 @@
 import gradio as gr
 from modules.util import join_prompts
 import shared
+from modules import config
 
 
-def generar_prompt(num_personajes, nombres, angulo, expresiones, poses, texto_extra, estilos, estilos_negativos):
+def generar_prompt(personajes, nombres, lora_enable, lora_model, lora_weight,
+                   angulo, expresion, pose, fondo, estilos, estilos_negativos):
     nombres_part = ', '.join([n.strip() for n in nombres.split(',') if n.strip()]) if nombres else ''
-    expresiones_part = ', '.join(expresiones) if expresiones else ''
-    poses_part = ', '.join(poses) if poses else ''
+
+    lora_part = ''
+    if lora_enable and lora_model != 'None':
+        lora_part = f"<lora:{lora_model}:{lora_weight}>"
 
     base_prompt = join_prompts(
-        f"{num_personajes} personaje" + ('' if num_personajes == 1 else 's'),
+        personajes,
         nombres_part,
+        lora_part,
         angulo,
-        expresiones_part,
-        poses_part,
-        texto_extra,
+        expresion,
+        pose,
+        fondo,
     )
 
     base_prompt = shared.prompt_styles.apply_styles_to_prompt(base_prompt, estilos)
@@ -27,47 +32,74 @@ def create_ui(tabname: str, main_prompt: gr.Textbox, main_negative: gr.Textbox):
     with gr.Box(elem_id=f"{tabname}_prompt_builder"):
         gr.Markdown("### Prompt Builder")
         with gr.Row():
-            num_personajes = gr.Dropdown(label="Cantidad de personajes", choices=[1, 2, 3, 4], value=1)
-            angulo = gr.Dropdown(label="Ángulo", choices=['frontal', 'lateral', 'espalda'], value='frontal')
-            cfg = gr.Slider(label='CFG', minimum=1.0, maximum=20.0, step=0.5, value=7.0)
+            personajes = gr.Dropdown(
+                label="Personajes",
+                choices=['1girl', '1boy', '2girls', '2boys'],
+                value='1girl'
+            )
+            angulo = gr.Dropdown(
+                label="Ángulo",
+                choices=['frontal', 'lateral', '3/4 view', 'desde arriba', 'desde abajo', 'pov'],
+                value='frontal'
+            )
         with gr.Row():
             nombres = gr.Textbox(label='Nombres')
         with gr.Row():
-            expresiones = gr.CheckboxGroup(label='Expresiones', choices=['feliz', 'triste', 'enojado'])
-            poses = gr.CheckboxGroup(label='Poses', choices=['de pie', 'sentado', 'corriendo'])
+            lora_enable = gr.Checkbox(label='LoRA Enable', value=False)
+            lora_model = gr.Dropdown(
+                label='LoRA',
+                choices=['None'] + config.lora_filenames,
+                value='None'
+            )
+            lora_weight = gr.Slider(
+                label='Weight',
+                minimum=config.default_loras_min_weight,
+                maximum=config.default_loras_max_weight,
+                step=0.01,
+                value=1.0
+            )
         with gr.Row():
-            texto_extra = gr.Textbox(label='Texto adicional')
+            expresiones = gr.Dropdown(
+                label='Expresiones',
+                choices=['feliz', 'triste', 'enojado', 'sorprendido', 'pensativo'],
+                value='feliz'
+            )
+            poses = gr.Dropdown(
+                label='Poses',
+                choices=['de pie', 'sentado', 'corriendo', 'saltando', 'acostado'],
+                value='de pie'
+            )
+        with gr.Row():
+            fondo = gr.Dropdown(
+                label='Fondo',
+                choices=['bosque', 'playa', 'ciudad', 'interior', 'espacio'],
+                value='bosque'
+            )
         with gr.Row():
             estilos = gr.Dropdown(label='Estilos', choices=list(shared.prompt_styles.styles), multiselect=True)
             estilos_negativos = gr.Dropdown(label='Estilos negativos', choices=list(shared.prompt_styles.styles), multiselect=True)
         with gr.Row():
             generar = gr.Button('Generar')
-            copiar = gr.Button('Copiar')
 
         generar.click(
             fn=generar_prompt,
-            inputs=[num_personajes, nombres, angulo, expresiones, poses, texto_extra, estilos, estilos_negativos],
+            inputs=[personajes, nombres, lora_enable, lora_model, lora_weight,
+                    angulo, expresiones, poses, fondo, estilos, estilos_negativos],
             outputs=[main_prompt, main_negative],
             show_progress=False,
         )
 
-        copiar.click(
-            fn=None,
-            _js=f"() => navigator.clipboard.writeText(document.getElementById('{main_prompt.elem_id}').value)",
-            inputs=None,
-            outputs=None,
-        )
-
     return {
-        'num_personajes': num_personajes,
+        'personajes': personajes,
         'nombres': nombres,
+        'lora_enable': lora_enable,
+        'lora_model': lora_model,
+        'lora_weight': lora_weight,
         'angulo': angulo,
         'expresiones': expresiones,
         'poses': poses,
-        'texto_extra': texto_extra,
+        'fondo': fondo,
         'estilos': estilos,
         'estilos_negativos': estilos_negativos,
-        'cfg': cfg,
         'generar': generar,
-        'copiar': copiar,
     }
