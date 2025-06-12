@@ -827,10 +827,23 @@ def persist_config() -> None:
         json.dump({k: config_dict[k] for k in always_save_keys}, json_file, indent=4)
 
 
+def _strip_ratio_label(label: str) -> str:
+    """Return plain ``width*height`` from the HTML label used in the UI."""
+    if not isinstance(label, str):
+        return label
+    ratio = label.split(" ")[0].replace("×", "*")
+    if ratio in available_aspect_ratios:
+        return ratio
+    return label
+
+
 def set_config_value(key: str, value) -> None:
     """Update ``config_dict`` and persist the change."""
     global config_dict
-    config_dict[key] = value
+    if key == 'default_aspect_ratio':
+        config_dict[key] = _strip_ratio_label(value)
+    else:
+        config_dict[key] = value
     if key not in always_save_keys:
         always_save_keys.append(key)
     persist_config()
