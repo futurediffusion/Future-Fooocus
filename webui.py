@@ -571,7 +571,7 @@ with shared.gradio_root:
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
 
-                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
+                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x.split(' ')[0].replace('×', '*')),
                                                   inputs=aspect_ratios_selection, queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
                     shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
@@ -581,20 +581,27 @@ with shared.gradio_root:
                 with gr.Accordion(label='Advanced', open=False):
 
                     with gr.Row():
+                        sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
+                                                   value=modules.config.default_sampler)
+                        scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
+                                                     value=modules.config.default_scheduler)
+
+                    with gr.Row(elem_classes='seed_row'):
                         image_seed = gr.Textbox(label='Seed', value=-1, max_lines=1)
                         seed_dice = gr.Button(value='\U0001f3b2', elem_classes='seed_button')
                         seed_restore = gr.Button(value='\U0001F519', elem_classes='seed_button')
                         seed_dice.click(lambda: -1, outputs=image_seed, queue=False, show_progress=False)
                         seed_restore.click(lambda x: x, inputs=seed_actual, outputs=image_seed, queue=False, show_progress=False)
 
-                    sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
-                                               value=modules.config.default_sampler)
-                    scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
-                                                 value=modules.config.default_scheduler)
+                    steps_slider = gr.Slider(label='Steps', minimum=1, maximum=200, step=1,
+                                             value=modules.config.default_overwrite_step if modules.config.default_overwrite_step > 0 else 30)
 
                     guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
                                                value=modules.config.default_cfg_scale,
                                                info='Higher value means style is cleaner, vivider, and more artistic.')
+
+                    clip_skip_basic = gr.Slider(label='CLIP Skip', minimum=1, maximum=flags.clip_skip_max, step=1,
+                                                value=modules.config.default_clip_skip)
 
                     sampler_name.change(lambda x: modules.config.set_config_value('default_sampler', x),
                                         inputs=sampler_name, queue=False, show_progress=False)
@@ -869,6 +876,15 @@ with shared.gradio_root:
                 dev_mode.change(dev_mode_checked, inputs=[dev_mode], outputs=[dev_tools],
                                 queue=False, show_progress=False)
 
+                # synchronize user step and clip skip sliders with debug sliders
+                steps_slider.change(lambda x: modules.config.set_config_value('default_overwrite_step', int(x)) or gr.update(value=int(x)),
+                                   inputs=steps_slider, outputs=overwrite_step, queue=False, show_progress=False)
+                overwrite_step.change(lambda x: gr.update(value=int(x)), inputs=overwrite_step, outputs=steps_slider, queue=False, show_progress=False)
+
+                clip_skip_basic.change(lambda x: modules.config.set_config_value('default_clip_skip', int(x)) or gr.update(value=int(x)),
+                                      inputs=clip_skip_basic, outputs=clip_skip, queue=False, show_progress=False)
+                clip_skip.change(lambda x: gr.update(value=int(x)), inputs=clip_skip, outputs=clip_skip_basic, queue=False, show_progress=False)
+
                 def refresh_files_clicked():
                     modules.config.update_files()
                     results = [gr.update(choices=modules.config.model_filenames)]
@@ -894,7 +910,7 @@ with shared.gradio_root:
                              overwrite_width, overwrite_height, guidance_scale, sharpness, adm_scaler_positive,
                              adm_scaler_negative, adm_scaler_end, refiner_swap_method, adaptive_cfg, clip_skip,
                              base_model, refiner_model, refiner_switch, sampler_name, scheduler_name, vae_name,
-                             image_seed, inpaint_engine, inpaint_engine_state,
+                             image_seed, inpaint_engine, inpaint_engine_state, steps_slider, clip_skip_basic,
                              inpaint_mode] + enhance_inpaint_mode_ctrls + [generate_button,
                              load_parameter_button] + freeu_ctrls + lora_ctrls
 
@@ -980,7 +996,7 @@ with shared.gradio_root:
         ctrls += [
             prompt, negative_prompt, style_selections, csv_style,
             performance_selection, aspect_ratios_selection, image_number, output_format, seed_actual,
-            read_wildcards_in_order, sharpness, guidance_scale
+            read_wildcards_in_order, sharpness, steps_slider, guidance_scale, clip_skip_basic
         ]
 
         ctrls += [base_model, refiner_model, refiner_switch] + lora_ctrls
