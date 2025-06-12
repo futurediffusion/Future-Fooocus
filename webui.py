@@ -583,7 +583,7 @@ with shared.gradio_root:
                     with gr.Row(elem_id="seed-container"):
                         seed_input = gr.Number(label="Seed", value=-1, elem_id="seed-input")
                         dice_btn = gr.Button("\U0001f3b2", elem_id="dice-btn")
-                        back_btn = gr.Button("\u2190 BACK", elem_id="back-btn")
+                        back_btn = gr.Button("\u267b\ufe0f", elem_id="back-btn")
                         dice_btn.click(lambda: -1, outputs=seed_input, queue=False, show_progress=False)
                         back_btn.click(lambda x: x, inputs=seed_actual, outputs=seed_input, queue=False, show_progress=False)
 
