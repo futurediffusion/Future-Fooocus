@@ -400,3 +400,9 @@ div:has(> #positive_prompt) {
   min-width: 30px !important;
   border-radius: 4px;
 }
+
+#history_button {
+  width: 100%;
+  font-size: 32px;
+  border-radius: 8px;
+}

@@ -576,18 +576,6 @@ with shared.gradio_root:
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
                     shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
-                with gr.Accordion(label='Preset', open=False):
-                    if not args_manager.args.disable_preset_selection:
-                        preset_selection = gr.Dropdown(label='Preset',
-                                                       choices=modules.config.available_presets,
-                                                       value=args_manager.args.preset if args_manager.args.preset else "initial",
-                                                       interactive=True)
-
-                    performance_selection = gr.Radio(label='Performance',
-                                                     choices=flags.Performance.values(),
-                                                     value=modules.config.default_performance,
-                                                     elem_classes=['performance_selection'])
-
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
 
                 with gr.Accordion(label='Advanced', open=False):
@@ -615,15 +603,23 @@ with shared.gradio_root:
                     guidance_scale.change(lambda x: modules.config.set_config_value('default_cfg_scale', x),
                                         inputs=guidance_scale, queue=False, show_progress=False)
 
-                output_format = gr.Radio(label='Output Format',
-                                         choices=flags.OutputFormat.list(),
-                                         value=modules.config.default_output_format)
+                with gr.Accordion(label='Preset', open=False):
+                    if not args_manager.args.disable_preset_selection:
+                        preset_selection = gr.Dropdown(label='Preset',
+                                                       choices=modules.config.available_presets,
+                                                       value=args_manager.args.preset if args_manager.args.preset else "initial",
+                                                       interactive=True)
+
+                    performance_selection = gr.Radio(label='Performance',
+                                                     choices=flags.Performance.values(),
+                                                     value=modules.config.default_performance,
+                                                     elem_classes=['performance_selection'])
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
                         return gr.update(value='')
 
-                    return gr.update(value=f'<a href="file={get_current_html_path(output_format)}" target="_blank">\U0001F4DA History Log</a>')
+                    return gr.update(value=f'<button id="history_button" class="type_row" onclick="window.open(\'file={get_current_html_path(output_format)}\', \'_blank\')">\U0001F4DA History Log</button>')
 
                 def refresh_seed(seed_string):
                     try:
@@ -694,6 +690,9 @@ with shared.gradio_root:
                                       info='Higher value means image and texture are sharper.')
                 sharpness.change(lambda x: modules.config.set_config_value('default_sample_sharpness', x),
                                 inputs=sharpness, queue=False, show_progress=False)
+                output_format = gr.Radio(label='Output Format',
+                                         choices=flags.OutputFormat.list(),
+                                         value=modules.config.default_output_format)
                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/117" target="_blank">\U0001F4D4 Documentation</a>')
                 dev_mode = gr.Checkbox(label='Developer Debug Mode', value=modules.config.default_developer_debug_mode_checkbox, container=False)
 
