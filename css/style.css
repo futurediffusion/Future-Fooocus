@@ -160,14 +160,17 @@ div:has(> #positive_prompt) {
 
 
 .portrait-ratio {
-  width: 20px;
-  aspect-ratio: 5 / 12;
+  width: 52px;
+  aspect-ratio: 2 / 3;
+  width: auto;
 }
 
 
 .landscape-ratio {
   width: 52px;
-  aspect-ratio: 12 / 5;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: 32px;
 }
 
 

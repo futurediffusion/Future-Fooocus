@@ -1,3 +1,4 @@
-name,prompt,negative_prompt
-Example Style,masterpiece, low quality
-Second Style,{prompt}, blurry
+﻿name,prompt,negative_prompt
+Example Style,masterpiece,low quality
+Second Style,{prompt},blurry
+IL2,"masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, realistic, detailed,","lowres, worst quality, low quality, bad anatomy, worst aesthetic, jpeg artifacts, scan artifacts, compression artifacts, old, early, loli, child, bokeh, distorted anatomy, bad proportions, missing body part, missing limb, unclear eyesaaa, bad hands, mutated hands, extra arms, missing arm, fused fingers, fewer digits, extra digits, missing leg, mole, watermark, logo, censored, artist name, patreon logo, patreon username, web address, signature, ai-generated, open mouth"
