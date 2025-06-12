@@ -648,12 +648,6 @@ with shared.gradio_root:
                 history_link = gr.HTML()
                 shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
 
-            with gr.Tab(label='Styles'):
-                from modules import ui_prompt_styles as ui_styles
-                ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
-                style_selections = ui_styles_comp.dropdown
-                csv_style = gr.State(None)
-
             with gr.Tab(label='Models'):
                 with gr.Group():
                     with gr.Row():
@@ -688,6 +682,12 @@ with shared.gradio_root:
 
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
+
+            with gr.Tab(label='Styles'):
+                from modules import ui_prompt_styles as ui_styles
+                ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
+                style_selections = ui_styles_comp.dropdown
+                csv_style = gr.State(None)
             with gr.Tab(label='Advanced'):
                 sharpness = gr.Slider(label='Image Sharpness', minimum=0.0, maximum=30.0, step=0.001,
                                       value=modules.config.default_sample_sharpness,
