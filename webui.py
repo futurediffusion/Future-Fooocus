@@ -576,51 +576,16 @@ with shared.gradio_root:
                                              value=modules.config.default_prompt_negative)
 
                 with gr.Accordion(label='Aspect Ratios', open=False):
-                    aspect_ratios_selection_hidden = gr.Radio(choices=modules.config.available_aspect_ratios_labels,
-                                                             value=modules.config.default_aspect_ratio,
-                                                             visible=False,
-                                                             elem_id='aspect_ratio_hidden')
+                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
+                                                       choices=modules.config.available_aspect_ratios_labels,
+                                                       value=modules.config.default_aspect_ratio,
+                                                       info='width × height',
+                                                       elem_classes='aspect_ratios')
 
-                    gr.HTML('<b>Square</b> <span style="font-size: smaller; color: grey;">width × height</span>')
-                    aspect_ratio_square = gr.Radio(show_label=False,
-                                                   choices=modules.config.aspect_ratio_square_labels,
-                                                   value=modules.config.default_aspect_ratio if modules.config.default_aspect_ratio in modules.config.aspect_ratio_square_labels else None,
-                                                   elem_classes='aspect_ratios')
-
-                    gr.HTML('<b>Portrait</b> <span style="font-size: smaller; color: grey;">width × height</span>')
-                    aspect_ratio_portrait = gr.Radio(show_label=False,
-                                                     choices=modules.config.aspect_ratio_portrait_labels,
-                                                     value=modules.config.default_aspect_ratio if modules.config.default_aspect_ratio in modules.config.aspect_ratio_portrait_labels else None,
-                                                     elem_classes='aspect_ratios')
-
-                    gr.HTML('<b>Landscape</b> <span style="font-size: smaller; color: grey;">width × height</span>')
-                    aspect_ratio_landscape = gr.Radio(show_label=False,
-                                                      choices=modules.config.aspect_ratio_landscape_labels,
-                                                      value=modules.config.default_aspect_ratio if modules.config.default_aspect_ratio in modules.config.aspect_ratio_landscape_labels else None,
-                                                      elem_classes='aspect_ratios')
-
-                    def aspect_ratio_change(v):
-                        modules.config.set_config_value('default_aspect_ratio', v)
-                        return [gr.update(value=v if v in modules.config.aspect_ratio_square_labels else None),
-                                gr.update(value=v if v in modules.config.aspect_ratio_portrait_labels else None),
-                                gr.update(value=v if v in modules.config.aspect_ratio_landscape_labels else None),
-                                v]
-
-                    aspect_ratio_square.change(aspect_ratio_change, inputs=aspect_ratio_square,
-                                               outputs=[aspect_ratio_square, aspect_ratio_portrait, aspect_ratio_landscape, aspect_ratios_selection_hidden],
-                                               queue=False, show_progress=False,
-                                               _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    aspect_ratio_portrait.change(aspect_ratio_change, inputs=aspect_ratio_portrait,
-                                                 outputs=[aspect_ratio_square, aspect_ratio_portrait, aspect_ratio_landscape, aspect_ratios_selection_hidden],
-                                                 queue=False, show_progress=False,
-                                                 _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    aspect_ratio_landscape.change(aspect_ratio_change, inputs=aspect_ratio_landscape,
-                                                  outputs=[aspect_ratio_square, aspect_ratio_portrait, aspect_ratio_landscape, aspect_ratios_selection_hidden],
-                                                  queue=False, show_progress=False,
+                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
+                                                  inputs=aspect_ratios_selection, queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection_hidden, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
-
-                    aspect_ratios_selection = aspect_ratios_selection_hidden
+                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
                 with gr.Accordion(label='Preset', open=False):
                     if not args_manager.args.disable_preset_selection:
@@ -694,6 +659,12 @@ with shared.gradio_root:
                 history_link = gr.HTML()
                 shared.gradio_root.load(update_history_link, outputs=history_link, queue=False, show_progress=False)
 
+            with gr.Tab(label='Styles'):
+                from modules import ui_prompt_styles as ui_styles
+                ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
+                style_selections = ui_styles_comp.dropdown
+                csv_style = gr.State(None)
+
             with gr.Tab(label='Models'):
                 with gr.Group():
                     with gr.Row():
@@ -708,8 +679,7 @@ with shared.gradio_root:
                                                value=modules.config.default_refiner_switch,
                                                visible=modules.config.default_refiner_model_name != 'None')
 
-                    base_model.change(lambda x: modules.config.set_config_value('default_model', x), inputs=base_model, queue=False, show_progress=False)
-                    refiner_model.change(lambda x: (modules.config.set_config_value('default_refiner_model_name', x), gr.update(visible=x != 'None'))[1],
+                    refiner_model.change(lambda x: gr.update(visible=x != 'None'),
                                          inputs=refiner_model, outputs=refiner_switch, show_progress=False, queue=False)
 
                 with gr.Group():
@@ -722,28 +692,13 @@ with shared.gradio_root:
                             lora_model = gr.Dropdown(label=f'LoRA {i + 1}',
                                                      choices=['None'] + modules.config.lora_filenames, value=filename,
                                                      elem_classes='lora_model', scale=5)
-                    lora_weight = gr.Slider(label='Weight', minimum=modules.config.default_loras_min_weight,
+                            lora_weight = gr.Slider(label='Weight', minimum=modules.config.default_loras_min_weight,
                                                     maximum=modules.config.default_loras_max_weight, step=0.01, value=weight,
                                                     elem_classes='lora_weight', scale=5)
-                    lora_ctrls += [lora_enabled, lora_model, lora_weight]
-
-                def update_loras(*vals):
-                    l = []
-                    for i in range(0, len(vals), 3):
-                        l.append([vals[i], vals[i + 1], vals[i + 2]])
-                    modules.config.set_config_value('default_loras', l)
-
-                for ctrl in lora_ctrls:
-                    ctrl.change(update_loras, inputs=lora_ctrls, queue=False, show_progress=False)
+                            lora_ctrls += [lora_enabled, lora_model, lora_weight]
 
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
-
-            with gr.Tab(label='Styles'):
-                from modules import ui_prompt_styles as ui_styles
-                ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
-                style_selections = ui_styles_comp.dropdown
-                csv_style = gr.State(None)
             with gr.Tab(label='Advanced'):
                 sharpness = gr.Slider(label='Image Sharpness', minimum=0.0, maximum=30.0, step=0.001,
                                       value=modules.config.default_sample_sharpness,
