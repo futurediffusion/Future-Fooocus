@@ -26,7 +26,11 @@ shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.cs
 
 def get_task(*args):
     args = list(args)
-    args.pop(0)
+    # The previous pipeline step `prepare_seed` returns two values
+    # (`seed_actual` and `image_seed`) which are prepended to the
+    # user controls in the argument list.  Drop both of them so that
+    # `AsyncTask` receives the expected sequence of parameters only.
+    args = args[2:]
 
     return worker.AsyncTask(args=args)
 
