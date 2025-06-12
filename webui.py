@@ -571,7 +571,9 @@ with shared.gradio_root:
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
 
-                    aspect_ratios_selection.change(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
+                                                  inputs=aspect_ratios_selection, queue=False, show_progress=False,
+                                                  _js='(x)=>{refresh_aspect_ratios_label(x);}')
                     shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
                 with gr.Accordion(label='Preset', open=False):
@@ -605,6 +607,13 @@ with shared.gradio_root:
                     guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
                                                value=modules.config.default_cfg_scale,
                                                info='Higher value means style is cleaner, vivider, and more artistic.')
+
+                    sampler_name.change(lambda x: modules.config.set_config_value('default_sampler', x),
+                                        inputs=sampler_name, queue=False, show_progress=False)
+                    scheduler_name.change(lambda x: modules.config.set_config_value('default_scheduler', x),
+                                          inputs=scheduler_name, queue=False, show_progress=False)
+                    guidance_scale.change(lambda x: modules.config.set_config_value('default_cfg_scale', x),
+                                        inputs=guidance_scale, queue=False, show_progress=False)
 
                 output_format = gr.Radio(label='Output Format',
                                          choices=flags.OutputFormat.list(),
@@ -683,6 +692,8 @@ with shared.gradio_root:
                 sharpness = gr.Slider(label='Image Sharpness', minimum=0.0, maximum=30.0, step=0.001,
                                       value=modules.config.default_sample_sharpness,
                                       info='Higher value means image and texture are sharper.')
+                sharpness.change(lambda x: modules.config.set_config_value('default_sample_sharpness', x),
+                                inputs=sharpness, queue=False, show_progress=False)
                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/117" target="_blank">\U0001F4D4 Documentation</a>')
                 dev_mode = gr.Checkbox(label='Developer Debug Mode', value=modules.config.default_developer_debug_mode_checkbox, container=False)
 
@@ -922,7 +933,8 @@ with shared.gradio_root:
             preset_selection.change(preset_selection_change, inputs=[preset_selection, state_is_generating, inpaint_mode], outputs=load_data_outputs, queue=False, show_progress=True) \
                 .then(inpaint_engine_state_change, inputs=[inpaint_engine_state] + enhance_inpaint_mode_ctrls, outputs=enhance_inpaint_engine_ctrls, queue=False, show_progress=False)
 
-        performance_selection.change(lambda x: [gr.update(interactive=not flags.Performance.has_restricted_features(x))] * 11 +
+        performance_selection.change(lambda x: modules.config.set_config_value('default_performance', x) or
+                                               [gr.update(interactive=not flags.Performance.has_restricted_features(x))] * 11 +
                                                [gr.update(visible=not flags.Performance.has_restricted_features(x))] * 1 +
                                                [gr.update(value=flags.Performance.has_restricted_features(x))] * 1,
                                      inputs=performance_selection,
@@ -933,6 +945,8 @@ with shared.gradio_root:
                                      ], queue=False, show_progress=False)
 
         output_format.input(lambda x: gr.update(output_format=x), inputs=output_format)
+        output_format.change(lambda x: modules.config.set_config_value('default_output_format', x),
+                             inputs=output_format, queue=False, show_progress=False)
 
         advanced_checkbox.change(lambda x: gr.update(visible=x), advanced_checkbox, advanced_column,
                                  queue=False, show_progress=False) \
