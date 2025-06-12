@@ -76,7 +76,7 @@ After Fooocus 2.1.60, you will also have `run_anime.bat` and `run_realistic.bat`
 
 After Fooocus 2.3.0 you can also switch presets directly in the browser. Keep in mind to add these arguments if you want to change the default behavior:
 * Use `--disable-preset-selection` to disable preset selection in the browser.
-* Use `--always-download-new-model` to download missing models on preset switch. Default is fallback to `previous_default_models` defined in the corresponding preset, also see terminal output.
+* Use `--always-download-new-model` to download missing models on preset switch.
 
 ![image](https://github.com/lllyasviel/Fooocus/assets/19834515/d386f817-4bd7-490c-ad89-c1e228c23447)
 
@@ -277,7 +277,7 @@ Given different goals, the default models and configs of Fooocus are different:
 
 | Task      | Windows | Linux args | Main Model                  | Refiner | Config                                                                         |
 |-----------| --- | --- |-----------------------------| --- |--------------------------------------------------------------------------------|
-| General   | run.bat |  | juggernautXL_v8Rundiffusion | not used | [here](https://github.com/lllyasviel/Fooocus/blob/main/presets/default.json)   |
+| General   | run.bat |  | waiNSFWIllustrious_v140 | not used | [here](https://github.com/lllyasviel/Fooocus/blob/main/presets/default.json)   |
 | Realistic | run_realistic.bat | --preset realistic | realisticStockPhoto_v20     | not used | [here](https://github.com/lllyasviel/Fooocus/blob/main/presets/realistic.json) |
 | Anime     | run_anime.bat | --preset anime | animaPencilXL_v500          | not used | [here](https://github.com/lllyasviel/Fooocus/blob/main/presets/anime.json)     |
 
