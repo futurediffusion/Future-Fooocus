@@ -116,14 +116,13 @@ div:has(> #positive_prompt) {
 }
 
 
-.aspect_ratios {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
+.aspect_ratios label {
+    flex: calc(50% - 5px) !important;
 }
 
-.aspect_ratios label {
-    margin: 0 !important;
+/* portrait group in two columns */
+.aspect_ratios label:nth-child(n+3):nth-child(-n+6) {
+    flex: calc(50% - 5px) !important;
 }
 
 /* ratio text with small icon */
@@ -162,19 +161,34 @@ div:has(> #positive_prompt) {
     margin-right: 4px !important;
 }
 
-/* group titles for aspect ratios */
-.aspect_ratio_group {
-    grid-column: 1 / -1;
+/* group titles and separators for aspect ratios */
+.aspect_ratios label:nth-child(1)::before {
+    content: 'Square';
+    display: block;
     font-weight: bold;
-    margin-top: 4px;
-    border-top: 1px solid #ccc;
-    padding-top: 2px;
+    margin-bottom: 2px;
 }
 
-.aspect_ratio_group:first-child {
-    margin-top: 0;
-    border: none;
-    padding-top: 0;
+.aspect_ratios label:nth-child(3) {
+    border-top: 1px solid #ccc;
+    margin-top: 4px;
+}
+.aspect_ratios label:nth-child(3)::before {
+    content: 'Portrait';
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+
+.aspect_ratios label:nth-child(7) {
+    border-top: 1px solid #ccc;
+    margin-top: 4px;
+}
+.aspect_ratios label:nth-child(7)::before {
+    content: 'Landscape';
+    display: block;
+    font-weight: bold;
+    margin-bottom: 2px;
 }
 
 .lora_enable label {

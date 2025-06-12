@@ -72,24 +72,6 @@ onUiLoaded(async () => {
         span.innerHTML = span.innerHTML.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     });
 
-    let ar = document.querySelector('.aspect_ratios');
-    if (ar) {
-        let labels = ar.querySelectorAll('label');
-        let groups = [
-            {index: 0, name: getTranslation('Square') || 'Square'},
-            {index: 2, name: getTranslation('Portrait') || 'Portrait'},
-            {index: 6, name: getTranslation('Landscape') || 'Landscape'},
-        ];
-        groups.forEach(g => {
-            if (labels[g.index]) {
-                let div = document.createElement('div');
-                div.className = 'aspect_ratio_group';
-                div.textContent = g.name;
-                labels[g.index].before(div);
-            }
-        });
-    }
-
     document.querySelector('.style_selections').addEventListener('focusout', function (event) {
         setTimeout(() => {
             if (!this.contains(document.activeElement)) {
