@@ -684,6 +684,8 @@ with shared.gradio_root:
                 ui_styles_comp = ui_styles.UiPromptStyles('advanced', prompt, negative_prompt)
                 style_selections = ui_styles_comp.dropdown
                 csv_style = gr.State(None)
+                from modules import prompt_builder
+                prompt_builder.create_ui('advanced', prompt, negative_prompt)
             with gr.Tab(label='Advanced'):
                 sharpness = gr.Slider(label='Image Sharpness', minimum=0.0, maximum=30.0, step=0.001,
                                       value=modules.config.default_sample_sharpness,
