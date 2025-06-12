@@ -13,9 +13,10 @@ from modules.util import generate_temp_filename
 log_cache = {}
 
 
-def get_current_html_path(output_format=None):
+def get_current_html_path(output_format=None, folder=None):
     output_format = output_format if output_format else modules.config.default_output_format
-    date_string, local_temp_filename, only_name = generate_temp_filename(folder=modules.config.path_outputs,
+    folder = folder if folder else modules.config.path_outputs
+    date_string, local_temp_filename, only_name = generate_temp_filename(folder=folder,
                                                                          extension=output_format)
     output_dir = os.path.dirname(local_temp_filename)
     html_name = os.path.join(output_dir, 'log.html')
@@ -53,7 +54,7 @@ def log(img, metadata, metadata_parser: MetadataParser | None = None, output_for
     if args_manager.args.disable_image_log:
         return local_temp_filename
 
-    html_name = os.path.join(os.path.dirname(local_temp_filename), 'log.html')
+    html_name = get_current_html_path(output_format=output_format, folder=path_outputs)
 
     css_styles = (
         "<style>"

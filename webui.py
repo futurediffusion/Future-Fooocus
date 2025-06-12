@@ -18,7 +18,7 @@ import copy
 import launch
 from extras.inpaint_mask import SAMOptions
 from modules.private_logger import get_current_html_path
-from modules.ui_gradio_extensions import reload_javascript
+from modules.ui_gradio_extensions import reload_javascript, webpath
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 
@@ -620,7 +620,7 @@ with shared.gradio_root:
                         return gr.update(value='')
                     path = get_current_html_path(output_format)
                     if os.path.exists(path):
-                        return gr.update(value=f'<button id="history_button" onclick="window.open(\'file={path}\', \'_blank\')">\U0001F4DA History Log</button>')
+                        return gr.update(value=f'<button id="history_button" onclick="window.open(\'{webpath(path)}\', \"_blank\")">\U0001F4DA History Log</button>')
                     return gr.update(value='')
 
                 def refresh_seed(seed_string):
