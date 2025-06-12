@@ -116,14 +116,8 @@ class AsyncTask:
         self.inpaint_erode_or_dilate = args.pop()
         self.save_final_enhanced_image_only = args.pop() if not args_manager.args.disable_image_log else False
         self.save_metadata_to_images = args.pop() if not args_manager.args.disable_metadata else False
-        if not args_manager.args.disable_metadata:
-            metadata_value = args.pop()
-            try:
-                self.metadata_scheme = MetadataScheme(metadata_value)
-            except ValueError:
-                self.metadata_scheme = MetadataScheme.FOOOCUS
-        else:
-            self.metadata_scheme = MetadataScheme.FOOOCUS
+        self.metadata_scheme = MetadataScheme(
+            args.pop()) if not args_manager.args.disable_metadata else MetadataScheme.FOOOCUS
 
         self.cn_tasks = {x: [] for x in ip_list}
         for _ in range(modules.config.default_controlnet_image_count):
