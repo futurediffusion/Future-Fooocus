@@ -72,6 +72,38 @@ onUiLoaded(async () => {
         span.innerHTML = span.innerHTML.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
     });
 
+    let aspectContainer = document.querySelector('.aspect_ratios');
+    if (aspectContainer && !aspectContainer.querySelector('.aspect_ratios_group')) {
+        let labels = Array.from(aspectContainer.querySelectorAll('label'));
+        aspectContainer.innerHTML = '';
+        const groups = [
+            {title: 'Square', count: 2},
+            {title: 'Portrait', count: 4},
+            {title: 'Landscape', count: labels.length - 6}
+        ];
+        let idx = 0;
+        groups.forEach(g => {
+            let grp = document.createElement('div');
+            grp.classList.add('aspect_ratios_group');
+            let title = document.createElement('div');
+            title.textContent = g.title;
+            title.style.fontWeight = 'bold';
+            title.style.width = '100%';
+            grp.appendChild(title);
+            for (let i = 0; i < g.count; i++) {
+                if (labels[idx]) {
+                    grp.appendChild(labels[idx]);
+                } else {
+                    let blank = document.createElement('div');
+                    blank.style.flex = '0 0 calc(50% - 5px)';
+                    grp.appendChild(blank);
+                }
+                idx++;
+            }
+            aspectContainer.appendChild(grp);
+        });
+    }
+
     document.querySelector('.style_selections').addEventListener('focusout', function (event) {
         setTimeout(() => {
             if (!this.contains(document.activeElement)) {

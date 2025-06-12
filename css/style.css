@@ -116,13 +116,22 @@ div:has(> #positive_prompt) {
 }
 
 
-.aspect_ratios label {
-    flex: calc(50% - 5px) !important;
+/* aspect ratio options arranged in two-column flex layout */
+.aspect_ratios_group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-/* portrait group in two columns */
-.aspect_ratios label:nth-child(n+3):nth-child(-n+6) {
-    flex: calc(50% - 5px) !important;
+.aspect_ratios_group label {
+    flex: 0 0 calc(50% - 5px);
+    box-sizing: border-box;
+}
+
+.aspect_ratios_group > div:first-child {
+    width: 100%;
+    font-weight: bold;
+    margin-bottom: 2px;
 }
 
 /* ratio text with small icon */
@@ -161,35 +170,6 @@ div:has(> #positive_prompt) {
     margin-right: 4px !important;
 }
 
-/* group titles and separators for aspect ratios */
-.aspect_ratios label:nth-child(1)::before {
-    content: 'Square';
-    display: block;
-    font-weight: bold;
-    margin-bottom: 2px;
-}
-
-.aspect_ratios label:nth-child(3) {
-    border-top: 1px solid #ccc;
-    margin-top: 4px;
-}
-.aspect_ratios label:nth-child(3)::before {
-    content: 'Portrait';
-    display: block;
-    font-weight: bold;
-    margin-bottom: 2px;
-}
-
-.aspect_ratios label:nth-child(7) {
-    border-top: 1px solid #ccc;
-    margin-top: 4px;
-}
-.aspect_ratios label:nth-child(7)::before {
-    content: 'Landscape';
-    display: block;
-    font-weight: bold;
-    margin-bottom: 2px;
-}
 
 .lora_enable label {
   height: 100%;
