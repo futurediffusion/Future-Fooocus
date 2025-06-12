@@ -447,14 +447,20 @@ div:has(> #positive_prompt) {
   height: 36px;
   padding: 6px 10px;
   font-size: 14px;
+  border-radius: 6px;
   box-sizing: border-box;
 }
 
-#dice-btn, #back-btn {
+#dice-btn, #recycle-btn {
   flex: 1.5;
   height: 36px;
-  font-size: 14px;
-  padding: 0;
+  aspect-ratio: 1;
+  font-size: 16px;
   border-radius: 6px;
+  padding: 0;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  cursor: pointer;
   box-sizing: border-box;
 }
