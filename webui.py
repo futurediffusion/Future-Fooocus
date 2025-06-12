@@ -584,8 +584,8 @@ with shared.gradio_root:
                         seed_input = gr.Number(label="Seed", value=-1, elem_id="seed-input")
                         dice_btn = gr.Button("\U0001f3b2", elem_id="dice-btn")
                         recycle_btn = gr.Button("\u267b\ufe0f", elem_id="recycle-btn")
-                        dice_btn.click(lambda: -1, outputs=seed_input, queue=False, show_progress=False)
-                        recycle_btn.click(lambda x: x, inputs=seed_actual, outputs=seed_input, queue=False, show_progress=False)
+                        dice_btn.click(lambda: gr.update(value=-1), outputs=seed_input, queue=False, show_progress=False)
+                        recycle_btn.click(lambda x: gr.update(value=x), inputs=seed_actual, outputs=seed_input, queue=False, show_progress=False)
 
                     sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
                                                value=modules.config.default_sampler)
