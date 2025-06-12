@@ -115,39 +115,44 @@ div:has(> #positive_prompt) {
     width: 140px !important;
 }
 
+
 .aspect_ratios label {
     flex: calc(50% - 5px) !important;
 }
 
+/* portrait group in two columns */
 .aspect_ratios label:nth-child(n+3):nth-child(-n+6) {
-    flex: calc(25% - 5px) !important;
+    flex: calc(50% - 5px) !important;
 }
 
-/* shape for ratio buttons */
+/* ratio text with small icon */
 .aspect_ratios label span {
-    display: flex !important;
+    display: inline-flex !important;
     align-items: center;
-    justify-content: center;
     white-space: nowrap !important;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 4px;
     padding: 4px 2px;
 }
 
-.aspect_ratios label:nth-child(1) span,
-.aspect_ratios label:nth-child(2) span {
+.aspect_ratios label span::after {
+    content: '';
+    display: inline-block;
+    margin-left: 4px;
+    width: 12px;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 2px;
+}
+
+.aspect_ratios label:nth-child(1) span::after,
+.aspect_ratios label:nth-child(2) span::after {
     aspect-ratio: 1 / 1;
-    width: 60px;
 }
 
-.aspect_ratios label:nth-child(n+3):nth-child(-n+6) span {
+.aspect_ratios label:nth-child(n+3):nth-child(-n+6) span::after {
     aspect-ratio: 2 / 3;
-    width: 40px;
 }
 
-.aspect_ratios label:nth-child(n+7) span {
+.aspect_ratios label:nth-child(n+7) span::after {
     aspect-ratio: 3 / 2;
-    width: 60px;
 }
 
 
