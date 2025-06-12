@@ -182,10 +182,13 @@ div:has(> #positive_prompt) {
 
 .lora_enable label {
   height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .lora_enable label input {
-  margin: auto;
+  margin: 0;
 }
 
 .lora_enable label span {
