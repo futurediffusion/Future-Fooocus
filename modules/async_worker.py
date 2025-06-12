@@ -138,7 +138,7 @@ class AsyncTask:
             cn_stop = args.pop()
             cn_weight = args.pop()
             cn_type = args.pop()
-            if cn_img is not None:
+            if cn_img is not None and cn_type in self.cn_tasks:
                 self.cn_tasks[cn_type].append([cn_img, cn_stop, cn_weight])
 
         self.debugging_dino = args.pop()
