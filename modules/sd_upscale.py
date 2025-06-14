@@ -3,8 +3,19 @@ from dataclasses import dataclass
 from typing import List
 
 from PIL import Image
+from ldm_patched.utils import path_utils
 
-DEFAULT_UPSCALERS = ['None']
+
+def _find_upscalers():
+    try:
+        models = path_utils.get_filename_list("upscale_models")
+    except Exception as e:
+        print(f"Failed to load upscale models: {e}")
+        models = []
+    return ['None'] + models
+
+
+DEFAULT_UPSCALERS = _find_upscalers()
 
 
 @dataclass
