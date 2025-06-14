@@ -1,6 +1,8 @@
 import os
+import time
 from urllib.parse import urlparse
 from typing import Optional
+import urllib.error
 
 
 def load_file_from_url(
@@ -24,5 +26,13 @@ def load_file_from_url(
     if not os.path.exists(cached_file):
         print(f'Downloading: "{url}" to {cached_file}\n')
         from torch.hub import download_url_to_file
-        download_url_to_file(url, cached_file, progress=progress)
+        for attempt in range(3):
+            try:
+                download_url_to_file(url, cached_file, progress=progress)
+                break
+            except urllib.error.HTTPError as e:
+                if attempt == 2:
+                    raise
+                print(f"Download failed with {e}. Retrying {attempt + 1}/3...")
+                time.sleep(5)
     return cached_file
