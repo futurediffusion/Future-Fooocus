@@ -592,6 +592,9 @@ with shared.gradio_root:
                     scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
                                                  value=modules.config.default_scheduler)
 
+                    overwrite_step_default = modules.config.default_overwrite_step if modules.config.default_overwrite_step >= 0 else flags.Steps[flags.Performance(modules.config.default_performance).name].value
+                    overwrite_step = gr.Slider(label='Steps', minimum=0, maximum=100, step=1,
+                                               value=overwrite_step_default)
                     guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
                                                value=modules.config.default_cfg_scale,
                                                info='Higher value means style is cleaner, vivider, and more artistic.')
@@ -600,6 +603,8 @@ with shared.gradio_root:
                                         inputs=sampler_name, queue=False, show_progress=False)
                     scheduler_name.change(lambda x: modules.config.set_config_value('default_scheduler', x),
                                           inputs=scheduler_name, queue=False, show_progress=False)
+                    overwrite_step.change(lambda x: modules.config.set_config_value('default_overwrite_step', x),
+                                          inputs=overwrite_step, queue=False, show_progress=False)
                     guidance_scale.change(lambda x: modules.config.set_config_value('default_cfg_scale', x),
                                         inputs=guidance_scale, queue=False, show_progress=False)
 
@@ -727,10 +732,6 @@ with shared.gradio_root:
                                                           info='(Experimental) This may cause performance problems on some computers and certain internet conditions.',
                                                           value=False)
 
-                        overwrite_step = gr.Slider(label='Forced Overwrite of Sampling Step',
-                                                   minimum=-1, maximum=200, step=1,
-                                                   value=modules.config.default_overwrite_step,
-                                                   info='Set as -1 to disable. For developer debugging.')
                         overwrite_switch = gr.Slider(label='Forced Overwrite of Refiner Switch Step',
                                                      minimum=-1, maximum=200, step=1,
                                                      value=modules.config.default_overwrite_switch,
