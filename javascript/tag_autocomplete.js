@@ -48,8 +48,12 @@
         'a1111-sd-webui-tagcomplete/tags/danbooru.csv',
         'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'
     ];
+    const CHANT_FILES = (window.chant_json_files && Array.isArray(window.chant_json_files)) ? window.chant_json_files : [
+        'a1111-sd-webui-tagcomplete/tags/demo-chants.json'
+    ];
     const MAX_RESULTS = 5;
     let tags = [];
+    let chants = [];
     let container; // suggestion container
     let selected = -1;
     let skipInput = false;
@@ -106,6 +110,25 @@
         }
     }
 
+    async function loadChants(){
+        const loaded = [];
+        try {
+            for(const file of CHANT_FILES){
+                const resp = await fetch('file=' + file);
+                if(!resp.ok) continue;
+                const json = await resp.json();
+                json.forEach(c => {
+                    if(c && c.name && c.content){
+                        loaded.push(c);
+                    }
+                });
+            }
+            chants = loaded;
+        } catch(err){
+            console.error('Failed to load chants', err);
+        }
+    }
+
     function createContainer(area){
         container = document.createElement('div');
         container.style.position = 'absolute';
@@ -122,14 +145,14 @@
         document.body.appendChild(container);
     }
 
-    function showSuggestions(area){
-        const cursorPos = area.selectionStart;
-        const text = area.value.substring(0, cursorPos);
-        const fragment = text.split(/[,\n]/).pop().trim();
-        if(fragment.length === 0){
-            container.style.display = 'none';
-            return;
-        }
+    function isChantFragment(fragment){
+        const lower = fragment.toLowerCase();
+        if(!lower.startsWith('<')) return false;
+        if(lower.startsWith('<e:') || lower.startsWith('<h:') || lower.startsWith('<l:')) return false;
+        return !fragment.includes(' ');
+    }
+
+    function showTagSuggestions(area, fragment){
         const lower = fragment.toLowerCase();
         const results = tags.filter(t => t.tag.startsWith(lower));
         if(results.length === 0){
@@ -177,12 +200,80 @@
         selected = -1;
     }
 
+    function showChantSuggestions(area, fragment){
+        const search = fragment.toLowerCase().replace('<chant:', '').replace('<c:', '').replace('<','');
+        const results = chants.filter(c =>
+            (c.name && c.name.toLowerCase().includes(search)) ||
+            (c.terms && c.terms.toLowerCase().includes(search))
+        );
+        if(results.length === 0){
+            container.style.display = 'none';
+            return;
+        }
+        const limited = results.slice(0, MAX_RESULTS);
+        container.innerHTML = '';
+        const colors = ['#ffa500','#f48fb1','#f06292','#ec407a','#e91e63'];
+        limited.forEach((t,i)=>{
+            const div = document.createElement('div');
+            const color = colors[t.color%colors.length];
+            div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:${color}">${t.name}</span></div>`;
+            div.style.padding = '4px 8px';
+            div.style.cursor = 'pointer';
+            div.dataset.chant = t.content;
+            if(i===selected){
+                div.style.background = '#333';
+            } else {
+                div.style.background = '#1e1e1e';
+            }
+            div.addEventListener('mousedown', (e)=>{
+                e.preventDefault();
+                insertChant(area, fragment, t.content);
+            });
+            container.appendChild(div);
+        });
+        const caret = getCaretCoordinates(area, area.selectionStart);
+        const rect = area.getBoundingClientRect();
+        container.style.left = (window.scrollX + rect.left + caret.left - area.scrollLeft) + 'px';
+        container.style.top = (window.scrollY + rect.top + caret.top - area.scrollTop + caret.height) + 'px';
+        container.style.width = 'auto';
+        container.style.display = 'block';
+        selected = -1;
+    }
+
+    function showSuggestions(area){
+        const cursorPos = area.selectionStart;
+        const text = area.value.substring(0, cursorPos);
+        const fragment = text.split(/[,\n]/).pop().trim();
+        if(fragment.length === 0){
+            container.style.display = 'none';
+            return;
+        }
+        if(isChantFragment(fragment)) {
+            showChantSuggestions(area, fragment);
+        } else {
+            showTagSuggestions(area, fragment);
+        }
+    }
+
     function insert(area, fragment, tag){
         const cursorPos = area.selectionStart;
         const before = area.value.substring(0, cursorPos);
         const after = area.value.substring(cursorPos);
         const start = before.lastIndexOf(fragment);
         const insertion = tag + ', ';
+        area.value = before.substring(0, start) + insertion + after;
+        area.selectionStart = area.selectionEnd = start + insertion.length;
+        container.style.display = 'none';
+        skipInput = true;
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function insertChant(area, fragment, content){
+        const cursorPos = area.selectionStart;
+        const before = area.value.substring(0, cursorPos);
+        const after = area.value.substring(cursorPos);
+        const start = before.lastIndexOf(fragment);
+        const insertion = content + ' ';
         area.value = before.substring(0, start) + insertion + after;
         area.selectionStart = area.selectionEnd = start + insertion.length;
         container.style.display = 'none';
@@ -225,7 +316,10 @@
                 handled = true;
                 const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                 if(selected>=0){
-                    insert(area, fragment, items[selected].dataset.tag);
+                    if(items[selected].dataset.chant)
+                        insertChant(area, fragment, items[selected].dataset.chant);
+                    else
+                        insert(area, fragment, items[selected].dataset.tag);
                 } else {
                     container.style.display='none';
                 }
@@ -233,7 +327,12 @@
                 handled = true;
                 const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                 const idx = selected>=0 ? selected : 0;
-                if(items.length>0) insert(area, fragment, items[idx].dataset.tag);
+                if(items.length>0){
+                    if(items[idx].dataset.chant)
+                        insertChant(area, fragment, items[idx].dataset.chant);
+                    else
+                        insert(area, fragment, items[idx].dataset.tag);
+                }
             } else if(e.key==='Escape'){
                 container.style.display='none';
                 handled = true;
@@ -255,7 +354,7 @@
     function init(){
         const area = document.querySelector('#positive_prompt textarea');
         if(!area) return;
-        loadTags().then(()=>attach(area));
+        Promise.all([loadTags(), loadChants()]).then(()=>attach(area));
     }
 
     if(window.onUiLoaded){

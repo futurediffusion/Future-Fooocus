@@ -34,7 +34,9 @@ def javascript_html():
     tag_autocomplete_js_path = webpath('javascript/tag_autocomplete.js')
     tag_dir = os.path.join(script_path, 'a1111-sd-webui-tagcomplete', 'tags')
     tag_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('.csv')]
+    chant_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
     tag_files_json = json.dumps(tag_files)
+    chant_files_json = json.dumps(chant_files)
     samples_path = webpath(os.path.abspath('./sdxl_styles/samples/fooocus_v2.jpg'))
     head = f'<script type="text/javascript">{localization_js(args_manager.args.language)}</script>\n'
     head += f'<script type="text/javascript" src="{script_js_path}"></script>\n'
@@ -46,6 +48,7 @@ def javascript_html():
     head += f'<script type="text/javascript" src="{image_viewer_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{tag_autocomplete_js_path}"></script>\n'
     head += f'<script type="text/javascript">window.tag_csv_files = {tag_files_json};</script>\n'
+    head += f'<script type="text/javascript">window.chant_json_files = {chant_files_json};</script>\n'
     head += f'<meta name="samples-path" content="{samples_path}">\n'
 
     if args_manager.args.theme:
