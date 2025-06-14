@@ -608,7 +608,8 @@ def worker():
             pil_img = modules.sd_upscale.upscale_image(
                 pil_img,
                 overlap=int(async_task.sd_upscale_tile_overlap),
-                scale_factor=float(async_task.sd_upscale_scale_factor)
+                scale_factor=float(async_task.sd_upscale_scale_factor),
+                upscaler_name=async_task.sd_upscale_upscaler
             )
             uov_input_image = np.array(pil_img)
         if '1.5x' in uov_method:
