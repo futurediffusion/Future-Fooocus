@@ -15,6 +15,7 @@ from modules import styles
 import modules.meta_parser
 import args_manager
 import copy
+import modules.sd_upscale
 import launch
 from extras.inpaint_mask import SAMOptions
 from modules.private_logger import get_current_html_path
@@ -212,6 +213,21 @@ with shared.gradio_root:
                                 uov_input_image = grh.Image(label='Image', source='upload', type='numpy', show_label=False)
                             with gr.Column():
                                 uov_method = gr.Radio(label='Upscale or Variation:', choices=flags.uov_list, value=modules.config.default_uov_method)
+                                sd_upscale_checkbox = gr.Checkbox(label='SD Upscale', value=modules.config.default_sd_upscale_checkbox)
+                                with gr.Column(visible=modules.config.default_sd_upscale_checkbox) as sd_upscale_panel:
+                                    sd_tile_overlap = gr.Slider(minimum=0, maximum=256, step=16,
+                                                               label='Tile overlap',
+                                                               value=modules.config.default_sd_upscale_tile_overlap)
+                                    sd_scale_factor = gr.Slider(minimum=1.0, maximum=4.0, step=0.05,
+                                                                label='Scale Factor',
+                                                                value=modules.config.default_sd_upscale_scale_factor)
+                                    sd_upscaler = gr.Dropdown(label='Upscaler',
+                                                             choices=modules.sd_upscale.DEFAULT_UPSCALERS,
+                                                             value=modules.config.default_sd_upscale_upscaler)
+                                sd_upscale_checkbox.change(lambda x: gr.update(visible=x),
+                                                           inputs=sd_upscale_checkbox,
+                                                           outputs=sd_upscale_panel,
+                                                           queue=False, show_progress=False)
                                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/390" target="_blank">\U0001F4D4 Documentation</a>')
                     with gr.Tab(label='Image Prompt', id='ip_tab') as ip_tab:
                         with gr.Row():
@@ -1008,7 +1024,7 @@ with shared.gradio_root:
 
         ctrls += [base_model, refiner_model, refiner_switch] + lora_ctrls
         ctrls += [input_image_checkbox, current_tab]
-        ctrls += [uov_method, uov_input_image]
+        ctrls += [uov_method, uov_input_image, sd_upscale_checkbox, sd_tile_overlap, sd_scale_factor, sd_upscaler]
         ctrls += [outpaint_selections, inpaint_input_image, inpaint_additional_prompt, inpaint_mask_image]
         ctrls += [disable_preview, disable_intermediate_results, disable_seed_increment, black_out_nsfw]
         ctrls += [adm_scaler_positive, adm_scaler_negative, adm_scaler_end, adaptive_cfg, clip_skip]

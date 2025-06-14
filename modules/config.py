@@ -586,6 +586,30 @@ default_overwrite_upscale = get_config_item_or_set_default(
     default_value=-1,
     validator=lambda x: isinstance(x, numbers.Number)
 )
+default_sd_upscale_checkbox = get_config_item_or_set_default(
+    key='default_sd_upscale_checkbox',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
+default_sd_upscale_tile_overlap = get_config_item_or_set_default(
+    key='default_sd_upscale_tile_overlap',
+    default_value=64,
+    validator=lambda x: isinstance(x, int) and 0 <= x <= 256,
+    expected_type=int
+)
+default_sd_upscale_scale_factor = get_config_item_or_set_default(
+    key='default_sd_upscale_scale_factor',
+    default_value=2.0,
+    validator=lambda x: isinstance(x, numbers.Number),
+    expected_type=numbers.Number
+)
+default_sd_upscale_upscaler = get_config_item_or_set_default(
+    key='default_sd_upscale_upscaler',
+    default_value='None',
+    validator=lambda x: isinstance(x, str),
+    expected_type=str
+)
 example_inpaint_prompts = get_config_item_or_set_default(
     key='example_inpaint_prompts',
     default_value=[

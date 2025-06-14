@@ -70,6 +70,10 @@ class AsyncTask:
         self.current_tab = args.pop()
         self.uov_method = args.pop()
         self.uov_input_image = args.pop()
+        self.sd_upscale_checkbox = args.pop()
+        self.sd_upscale_tile_overlap = args.pop()
+        self.sd_upscale_scale_factor = args.pop()
+        self.sd_upscale_upscaler = args.pop()
         self.outpaint_selections = args.pop()
         self.inpaint_input_image = args.pop()
         self.inpaint_additional_prompt = args.pop()
@@ -201,6 +205,8 @@ def worker():
     import modules.core as core
     import modules.flags as flags
     import modules.patch
+    from PIL import Image
+    import modules.sd_upscale
     import ldm_patched.modules.model_management
     import extras.preprocessors as preprocessors
     import modules.inpaint_worker as inpaint_worker
@@ -596,6 +602,14 @@ def worker():
         progressbar(async_task, current_progress, f'Upscaling image from {str((W, H))} ...')
         uov_input_image = perform_upscale(uov_input_image)
         print(f'Image upscaled.')
+        if async_task.sd_upscale_checkbox:
+            pil_img = Image.fromarray(uov_input_image)
+            pil_img = modules.sd_upscale.upscale_image(
+                pil_img,
+                overlap=int(async_task.sd_upscale_tile_overlap),
+                scale_factor=float(async_task.sd_upscale_scale_factor)
+            )
+            uov_input_image = np.array(pil_img)
         if '1.5x' in uov_method:
             f = 1.5
         elif '2x' in uov_method:
