@@ -199,27 +199,49 @@
         area.addEventListener('keydown', (e)=>{
             if(container.style.display==='none') return;
             const items = container.children;
+            let handled = false;
+
             if(e.key==='ArrowDown'){
-                e.preventDefault();
                 selected = (selected+1)%items.length;
-                updateHighlight(items);
+                handled = true;
             } else if(e.key==='ArrowUp'){
-                e.preventDefault();
                 selected = (selected-1+items.length)%items.length;
-                updateHighlight(items);
+                handled = true;
+            } else if(e.key==='PageDown'){
+                handled = true;
+                if(selected===-1 || selected===items.length-1) selected = 0;
+                else selected = Math.min(selected+5, items.length-1);
+            } else if(e.key==='PageUp'){
+                handled = true;
+                if(selected===-1 || selected===0) selected = items.length-1;
+                else selected = Math.max(selected-5, 0);
+            } else if(e.key==='End'){
+                selected = items.length-1;
+                handled = true;
+            } else if(e.key==='Home'){
+                selected = 0;
+                handled = true;
             } else if(e.key==='Enter'){
+                handled = true;
+                const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                 if(selected>=0){
-                    e.preventDefault();
-                    const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                     insert(area, fragment, items[selected].dataset.tag);
+                } else {
+                    container.style.display='none';
                 }
             } else if(e.key==='Tab'){
-                e.preventDefault();
+                handled = true;
                 const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                 const idx = selected>=0 ? selected : 0;
                 if(items.length>0) insert(area, fragment, items[idx].dataset.tag);
             } else if(e.key==='Escape'){
                 container.style.display='none';
+                handled = true;
+            }
+
+            if(handled){
+                e.preventDefault();
+                updateHighlight(items);
             }
         });
     }
