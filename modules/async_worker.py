@@ -73,6 +73,7 @@ class AsyncTask:
         self.sd_upscale_checkbox = args.pop()
         self.sd_upscale_tile_overlap = args.pop()
         self.sd_upscale_scale_factor = args.pop()
+        self.sd_upscale_denoising_strength = args.pop()
         self.sd_upscale_upscaler = args.pop()
         self.outpaint_selections = args.pop()
         self.inpaint_input_image = args.pop()
@@ -637,7 +638,7 @@ def worker():
             return direct_return, uov_input_image, None, None, None, None, None, current_progress
 
         tiled = True
-        denoising_strength = 0.382
+        denoising_strength = float(async_task.sd_upscale_denoising_strength)
         if async_task.overwrite_upscale_strength > 0:
             denoising_strength = async_task.overwrite_upscale_strength
         initial_pixels = core.numpy_to_pytorch(uov_input_image)

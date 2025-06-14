@@ -221,6 +221,9 @@ with shared.gradio_root:
                                     sd_scale_factor = gr.Slider(minimum=1.0, maximum=4.0, step=0.05,
                                                                 label='Scale Factor',
                                                                 value=modules.config.default_sd_upscale_scale_factor)
+                                    sd_denoising_strength = gr.Slider(minimum=0.0, maximum=1.0, step=0.001,
+                                                                       label='Denoising Strength',
+                                                                       value=modules.config.default_sd_upscale_denoising_strength)
                                     sd_upscaler = gr.Dropdown(label='Upscaler',
                                                              choices=modules.sd_upscale.DEFAULT_UPSCALERS,
                                                              value=modules.config.default_sd_upscale_upscaler)
@@ -1024,7 +1027,7 @@ with shared.gradio_root:
 
         ctrls += [base_model, refiner_model, refiner_switch] + lora_ctrls
         ctrls += [input_image_checkbox, current_tab]
-        ctrls += [uov_method, uov_input_image, sd_upscale_checkbox, sd_tile_overlap, sd_scale_factor, sd_upscaler]
+        ctrls += [uov_method, uov_input_image, sd_upscale_checkbox, sd_tile_overlap, sd_scale_factor, sd_denoising_strength, sd_upscaler]
         ctrls += [outpaint_selections, inpaint_input_image, inpaint_additional_prompt, inpaint_mask_image]
         ctrls += [disable_preview, disable_intermediate_results, disable_seed_increment, black_out_nsfw]
         ctrls += [adm_scaler_positive, adm_scaler_negative, adm_scaler_end, adaptive_cfg, clip_skip]

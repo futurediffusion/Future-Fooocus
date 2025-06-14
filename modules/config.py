@@ -604,6 +604,12 @@ default_sd_upscale_scale_factor = get_config_item_or_set_default(
     validator=lambda x: isinstance(x, numbers.Number),
     expected_type=numbers.Number
 )
+default_sd_upscale_denoising_strength = get_config_item_or_set_default(
+    key='default_sd_upscale_denoising_strength',
+    default_value=0.25,
+    validator=lambda x: isinstance(x, numbers.Number) and 0.0 <= x <= 1.0,
+    expected_type=numbers.Number
+)
 default_sd_upscale_upscaler = get_config_item_or_set_default(
     key='default_sd_upscale_upscaler',
     default_value='None',
