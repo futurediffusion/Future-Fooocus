@@ -864,6 +864,29 @@ with shared.gradio_root:
                         freeu_s2 = gr.Slider(label='S2', minimum=0, maximum=4, step=0.01, value=0.95)
                         freeu_ctrls = [freeu_enabled, freeu_b1, freeu_b2, freeu_s1, freeu_s2]
 
+                    with gr.Tab(label='Settings'):
+                        tag_dir = os.path.join(os.path.dirname(__file__), 'a1111-sd-webui-tagcomplete', 'tags')
+                        tag_files = [f for f in os.listdir(tag_dir) if f.endswith('.csv')]
+                        chant_files = [f for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
+                        with gr.Accordion(label='Tag Auto Complete', open=False):
+                            tac_active_checkbox = gr.Checkbox(label='Enable Tag Autocomplete', value=modules.config.tac_active)
+                            tac_tagfile_dropdown = gr.Dropdown(label='Tag File', choices=tag_files, value=modules.config.tac_tag_file)
+                            tac_chantfile_dropdown = gr.Dropdown(label='Chant File', choices=chant_files, value=modules.config.tac_chant_file)
+                            tac_max_results = gr.Slider(label='Maximum Results', minimum=1, maximum=30, step=1, value=modules.config.tac_max_results)
+                            tac_append_comma = gr.Checkbox(label='Append comma', value=modules.config.tac_append_comma)
+                            tac_append_space = gr.Checkbox(label='Append space', value=modules.config.tac_append_space)
+                            tac_replace_underscores = gr.Checkbox(label='Replace underscores', value=modules.config.tac_replace_underscores)
+                            tac_escape_parentheses = gr.Checkbox(label='Escape parentheses', value=modules.config.tac_escape_parentheses)
+
+                        tac_active_checkbox.change(lambda x: modules.config.set_config_value('tac_active', x), inputs=tac_active_checkbox, queue=False, show_progress=False)
+                        tac_tagfile_dropdown.change(lambda x: modules.config.set_config_value('tac_tag_file', x), inputs=tac_tagfile_dropdown, queue=False, show_progress=False)
+                        tac_chantfile_dropdown.change(lambda x: modules.config.set_config_value('tac_chant_file', x), inputs=tac_chantfile_dropdown, queue=False, show_progress=False)
+                        tac_max_results.change(lambda x: modules.config.set_config_value('tac_max_results', int(x)), inputs=tac_max_results, queue=False, show_progress=False)
+                        tac_append_comma.change(lambda x: modules.config.set_config_value('tac_append_comma', x), inputs=tac_append_comma, queue=False, show_progress=False)
+                        tac_append_space.change(lambda x: modules.config.set_config_value('tac_append_space', x), inputs=tac_append_space, queue=False, show_progress=False)
+                        tac_replace_underscores.change(lambda x: modules.config.set_config_value('tac_replace_underscores', x), inputs=tac_replace_underscores, queue=False, show_progress=False)
+                        tac_escape_parentheses.change(lambda x: modules.config.set_config_value('tac_escape_parentheses', x), inputs=tac_escape_parentheses, queue=False, show_progress=False)
+
                 def dev_mode_checked(r):
                     return gr.update(visible=r)
 

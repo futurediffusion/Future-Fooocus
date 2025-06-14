@@ -4,6 +4,7 @@ import os
 import json
 import gradio as gr
 import args_manager
+import modules.config
 
 from modules.localization import localization_js
 
@@ -37,6 +38,16 @@ def javascript_html():
     chant_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
     tag_files_json = json.dumps(tag_files)
     chant_files_json = json.dumps(chant_files)
+    tac_cfg = json.dumps({
+        'enabled': modules.config.tac_active,
+        'tagFile': os.path.join('a1111-sd-webui-tagcomplete', 'tags', modules.config.tac_tag_file),
+        'chantFile': os.path.join('a1111-sd-webui-tagcomplete', 'tags', modules.config.tac_chant_file),
+        'maxResults': modules.config.tac_max_results,
+        'appendComma': modules.config.tac_append_comma,
+        'appendSpace': modules.config.tac_append_space,
+        'replaceUnderscores': modules.config.tac_replace_underscores,
+        'escapeParentheses': modules.config.tac_escape_parentheses,
+    })
     samples_path = webpath(os.path.abspath('./sdxl_styles/samples/fooocus_v2.jpg'))
     head = f'<script type="text/javascript">{localization_js(args_manager.args.language)}</script>\n'
     head += f'<script type="text/javascript" src="{script_js_path}"></script>\n'
@@ -49,6 +60,7 @@ def javascript_html():
     head += f'<script type="text/javascript" src="{tag_autocomplete_js_path}"></script>\n'
     head += f'<script type="text/javascript">window.tag_csv_files = {tag_files_json};</script>\n'
     head += f'<script type="text/javascript">window.chant_json_files = {chant_files_json};</script>\n'
+    head += f'<script type="text/javascript">window.tac_user_config = {tac_cfg};</script>\n'
     head += f'<meta name="samples-path" content="{samples_path}">\n'
 
     if args_manager.args.theme:
