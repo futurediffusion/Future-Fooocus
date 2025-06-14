@@ -1,5 +1,5 @@
 // Simple tag autocomplete for the positive prompt textarea
-// Loads tags from danbooru.csv and shows suggestions while typing
+// Loads tags from all csv files in a1111-sd-webui-tagcomplete/tags and shows suggestions while typing
 
 (function(){
     // caret position helper from textarea-caret-position
@@ -44,8 +44,10 @@
         document.body.removeChild(div);
         return coordinates;
     }
-    const TAG_PATH = 'file=a1111-sd-webui-tagcomplete/tags/danbooru.csv';
-    const EXTRA_PATH = 'file=a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv';
+    const TAG_FILES = (window.tag_csv_files && Array.isArray(window.tag_csv_files)) ? window.tag_csv_files : [
+        'a1111-sd-webui-tagcomplete/tags/danbooru.csv',
+        'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'
+    ];
     const MAX_RESULTS = 5;
     let tags = [];
     let container; // suggestion container
@@ -72,31 +74,33 @@
     }
 
     async function loadTags(){
+        const loaded = [];
         try {
-            const [resp, extra] = await Promise.all([fetch(TAG_PATH), fetch(EXTRA_PATH)]);
-            if(resp.ok){
+            for(const file of TAG_FILES){
+                const resp = await fetch('file=' + file);
+                if(!resp.ok) continue;
                 const text = await resp.text();
-                const lines = text.split(/\n/);
-                lines.forEach(line=>{
+                text.split(/\n/).forEach(line=>{
                     line=line.trim();
                     if(!line) return;
                     const p=parseCSV(line);
-                    if(p.length>=3){
-                        tags.push({tag:p[0], count:parseInt(p[2])||0});
+                    if(p.length>=1){
+                        const entry = {tag:p[0]};
+                        if(p.length>=3){
+                            const c=parseInt(p[2]);
+                            if(!isNaN(c)) entry.count = c;
+                            else entry.meta = p[2];
+                        }
+                        if(!entry.meta && p.length>=2){
+                            const m = parseInt(p[1]);
+                            if(isNaN(m)) entry.meta = p[1];
+                        }
+                        loaded.push(entry);
                     }
                 });
             }
-            const metaMap={};
-            if(extra.ok){
-                const t2=await extra.text();
-                t2.split(/\n/).forEach(line=>{
-                    line=line.trim();
-                    if(!line) return;
-                    const p=parseCSV(line);
-                    if(p.length>=3) metaMap[p[0]]=p[2];
-                });
-            }
-            tags.forEach(t=>{ if(metaMap[t.tag]) t.meta=metaMap[t.tag]; });
+            const seen=new Set();
+            loaded.forEach(t=>{ if(!seen.has(t.tag)){ tags.push(t); seen.add(t.tag);} });
         } catch(err){
             console.error('Failed to load tags', err);
         }
