@@ -136,7 +136,15 @@
             container.style.display = 'none';
             return;
         }
-        results.sort((a,b)=>b.count - a.count);
+        results.sort((a, b) => {
+            const aq = a.meta && a.meta.toLowerCase().includes('quality');
+            const bq = b.meta && b.meta.toLowerCase().includes('quality');
+            if (aq && !bq) return -1;
+            if (!aq && bq) return 1;
+            const ac = a.count || 0;
+            const bc = b.count || 0;
+            return bc - ac;
+        });
         const limited = results.slice(0, MAX_RESULTS);
         container.innerHTML = '';
         const colors = ['#ffa500','#f48fb1','#f06292','#ec407a','#e91e63'];
