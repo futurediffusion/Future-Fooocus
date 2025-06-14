@@ -44,14 +44,20 @@
         document.body.removeChild(div);
         return coordinates;
     }
-    const TAG_FILES = (window.tag_csv_files && Array.isArray(window.tag_csv_files)) ? window.tag_csv_files : [
+    const TAC_CFG = window.tac_user_config || {};
+    const TAG_FILES = TAC_CFG.tagFile ? [TAC_CFG.tagFile] : ((window.tag_csv_files && Array.isArray(window.tag_csv_files)) ? window.tag_csv_files : [
         'a1111-sd-webui-tagcomplete/tags/danbooru.csv',
         'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'
-    ];
-    const CHANT_FILES = (window.chant_json_files && Array.isArray(window.chant_json_files)) ? window.chant_json_files : [
+    ]);
+    const CHANT_FILES = TAC_CFG.chantFile ? [TAC_CFG.chantFile] : ((window.chant_json_files && Array.isArray(window.chant_json_files)) ? window.chant_json_files : [
         'a1111-sd-webui-tagcomplete/tags/demo-chants.json'
-    ];
-    const MAX_RESULTS = 5;
+    ]);
+    const MAX_RESULTS = typeof TAC_CFG.maxResults === 'number' ? TAC_CFG.maxResults : 5;
+    const ENABLED = TAC_CFG.enabled !== undefined ? TAC_CFG.enabled : true;
+    const APPEND_COMMA = TAC_CFG.appendComma !== undefined ? TAC_CFG.appendComma : true;
+    const APPEND_SPACE = TAC_CFG.appendSpace !== undefined ? TAC_CFG.appendSpace : true;
+    const REPLACE_UNDERSCORES = TAC_CFG.replaceUnderscores || false;
+    const ESCAPE_PARENTHESES = TAC_CFG.escapeParentheses || false;
     let tags = [];
     let chants = [];
     let container; // suggestion container
@@ -260,7 +266,11 @@
         const before = area.value.substring(0, cursorPos);
         const after = area.value.substring(cursorPos);
         const start = before.lastIndexOf(fragment);
-        const insertion = tag + ', ';
+        if(REPLACE_UNDERSCORES) tag = tag.replace(/_/g, ' ');
+        if(ESCAPE_PARENTHESES) tag = tag.replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+        let insertion = tag;
+        if(APPEND_COMMA) insertion += ',';
+        if(APPEND_SPACE) insertion += ' ';
         area.value = before.substring(0, start) + insertion + after;
         area.selectionStart = area.selectionEnd = start + insertion.length;
         container.style.display = 'none';
@@ -273,7 +283,8 @@
         const before = area.value.substring(0, cursorPos);
         const after = area.value.substring(cursorPos);
         const start = before.lastIndexOf(fragment);
-        const insertion = content + ' ';
+        let insertion = content;
+        if(APPEND_SPACE) insertion += ' ';
         area.value = before.substring(0, start) + insertion + after;
         area.selectionStart = area.selectionEnd = start + insertion.length;
         container.style.display = 'none';
@@ -352,6 +363,7 @@
     }
 
     function init(){
+        if(!ENABLED) return;
         const area = document.querySelector('#positive_prompt textarea');
         if(!area) return;
         Promise.all([loadTags(), loadChants()]).then(()=>attach(area));

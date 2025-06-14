@@ -714,6 +714,56 @@ default_describe_content_type = get_config_item_or_set_default(
     expected_type=list
 )
 
+# --- Tag Autocomplete defaults ---
+tac_active = get_config_item_or_set_default(
+    key='tac_active',
+    default_value=True,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool,
+)
+tac_tag_file = get_config_item_or_set_default(
+    key='tac_tag_file',
+    default_value='danbooru.csv',
+    validator=lambda x: isinstance(x, str),
+    expected_type=str,
+)
+tac_chant_file = get_config_item_or_set_default(
+    key='tac_chant_file',
+    default_value='demo-chants.json',
+    validator=lambda x: isinstance(x, str),
+    expected_type=str,
+)
+tac_max_results = get_config_item_or_set_default(
+    key='tac_max_results',
+    default_value=5,
+    validator=lambda x: isinstance(x, int) and 1 <= x <= 30,
+    expected_type=int,
+)
+tac_append_comma = get_config_item_or_set_default(
+    key='tac_append_comma',
+    default_value=True,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool,
+)
+tac_append_space = get_config_item_or_set_default(
+    key='tac_append_space',
+    default_value=True,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool,
+)
+tac_replace_underscores = get_config_item_or_set_default(
+    key='tac_replace_underscores',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool,
+)
+tac_escape_parentheses = get_config_item_or_set_default(
+    key='tac_escape_parentheses',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool,
+)
+
 config_dict["default_loras"] = default_loras = default_loras[:default_max_lora_number] + [[True, 'None', 1.0] for _ in range(default_max_lora_number - len(default_loras))]
 
 # mapping config to meta parameter
