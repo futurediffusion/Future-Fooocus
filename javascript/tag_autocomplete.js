@@ -63,17 +63,17 @@
     function createContainer(area){
         container = document.createElement('div');
         container.style.position = 'absolute';
-        container.style.background = '#fff';
-        container.style.border = '1px solid #ccc';
-        container.style.zIndex = 1000;
+        container.style.background = '#1e1e1e';
+        container.style.color = '#fff';
+        container.style.border = '1px solid #444';
+        container.style.zIndex = 10000;
         container.style.display = 'none';
         container.style.maxHeight = '200px';
         container.style.overflowY = 'auto';
         container.style.borderRadius = '8px';
-        container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+        container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.6)';
         container.style.minWidth = '150px';
-        area.parentElement.style.position = 'relative';
-        area.parentElement.appendChild(container);
+        document.body.appendChild(container);
     }
 
     function showSuggestions(area){
@@ -102,7 +102,9 @@
             div.style.cursor = 'pointer';
             div.dataset.tag = t;
             if(i===selected){
-                div.style.background = '#ddd';
+                div.style.background = '#333';
+            } else {
+                div.style.background = '#1e1e1e';
             }
             div.addEventListener('mousedown', (e)=>{
                 e.preventDefault();
@@ -111,8 +113,9 @@
             container.appendChild(div);
         });
         const caret = getCaretCoordinates(area, area.selectionStart);
-        container.style.left = (caret.left - area.scrollLeft) + 'px';
-        container.style.top = (caret.top - area.scrollTop + caret.height) + 'px';
+        const rect = area.getBoundingClientRect();
+        container.style.left = (window.scrollX + rect.left + caret.left - area.scrollLeft) + 'px';
+        container.style.top = (window.scrollY + rect.top + caret.top - area.scrollTop + caret.height) + 'px';
         container.style.width = 'auto';
         container.style.display = 'block';
         selected = -1;
@@ -149,6 +152,11 @@
                     const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
                     insert(area, fragment, items[selected].dataset.tag);
                 }
+            } else if(e.key==='Tab'){
+                e.preventDefault();
+                const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
+                const idx = selected>=0 ? selected : 0;
+                if(items.length>0) insert(area, fragment, items[idx].dataset.tag);
             } else if(e.key==='Escape'){
                 container.style.display='none';
             }
@@ -157,7 +165,7 @@
 
     function updateHighlight(items){
         for(let i=0;i<items.length;i++){
-            items[i].style.background = (i===selected)?'#ddd':'#fff';
+            items[i].style.background = (i===selected)?'#333':'#1e1e1e';
         }
     }
 
