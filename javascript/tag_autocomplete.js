@@ -45,16 +45,58 @@
         return coordinates;
     }
     const TAG_PATH = 'file=a1111-sd-webui-tagcomplete/tags/danbooru.csv';
+    const EXTRA_PATH = 'file=a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv';
+    const MAX_RESULTS = 5;
     let tags = [];
     let container; // suggestion container
     let selected = -1;
+    let skipInput = false;
+
+    function parseCSV(line){
+        const result=[];
+        let cur='';
+        let q=false;
+        for(let i=0;i<line.length;i++){
+            const ch=line[i];
+            if(ch==='"'){ q=!q; continue; }
+            if(ch===',' && !q){ result.push(cur); cur=''; }
+            else cur+=ch;
+        }
+        result.push(cur);
+        return result;
+    }
+
+    function formatCount(num){
+        if(!num) return '';
+        return Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1}).format(num);
+    }
 
     async function loadTags(){
         try {
-            const resp = await fetch(TAG_PATH);
-            if(!resp.ok) return;
-            const text = await resp.text();
-            tags = text.split(/\n/).map(line => line.split(',')[0]);
+            const [resp, extra] = await Promise.all([fetch(TAG_PATH), fetch(EXTRA_PATH)]);
+            if(resp.ok){
+                const text = await resp.text();
+                const lines = text.split(/\n/);
+                lines.forEach(line=>{
+                    line=line.trim();
+                    if(!line) return;
+                    const p=parseCSV(line);
+                    if(p.length>=3){
+                        tags.push({tag:p[0], count:parseInt(p[2])||0});
+                    }
+                });
+            }
+            const metaMap={};
+            if(extra.ok){
+                const t2=await extra.text();
+                t2.split(/\n/).forEach(line=>{
+                    line=line.trim();
+                    if(!line) return;
+                    const p=parseCSV(line);
+                    if(p.length>=3) metaMap[p[0]]=p[2];
+                });
+            }
+            tags.forEach(t=>{ if(metaMap[t.tag]) t.meta=metaMap[t.tag]; });
         } catch(err){
             console.error('Failed to load tags', err);
         }
@@ -68,8 +110,8 @@
         container.style.border = '1px solid #444';
         container.style.zIndex = 10000;
         container.style.display = 'none';
-        container.style.maxHeight = '200px';
-        container.style.overflowY = 'auto';
+        container.style.maxHeight = 'none';
+        container.style.overflowY = 'hidden';
         container.style.borderRadius = '8px';
         container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.6)';
         container.style.minWidth = '150px';
@@ -85,22 +127,24 @@
             return;
         }
         const lower = fragment.toLowerCase();
-        const results = tags.filter(t => t.startsWith(lower)).slice(0,10);
+        const results = tags.filter(t => t.tag.startsWith(lower));
         if(results.length === 0){
             container.style.display = 'none';
             return;
         }
+        results.sort((a,b)=>b.count - a.count);
+        const limited = results.slice(0, MAX_RESULTS);
         container.innerHTML = '';
         const colors = ['#ffa500','#f48fb1','#f06292','#ec407a','#e91e63'];
-        results.forEach((t,i)=>{
+        limited.forEach((t,i)=>{
             const div = document.createElement('div');
-            const pre = t.substring(0, fragment.length);
-            const post = t.substring(fragment.length);
+            const pre = t.tag.substring(0, fragment.length);
+            const post = t.tag.substring(fragment.length);
             const color = colors[(i+1)%colors.length];
-            div.innerHTML = `<span style="color:${colors[0]}">${pre}</span><span style="color:${color}">${post}</span>`;
-            div.style.padding = '2px 4px';
+            div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><span><span style="color:${colors[0]}">${pre}</span><span style="color:${color}">${post}</span></span><span style="color:#888;margin-left:10px">${t.meta ? t.meta : formatCount(t.count)}</span></div>`;
+            div.style.padding = '4px 8px';
             div.style.cursor = 'pointer';
-            div.dataset.tag = t;
+            div.dataset.tag = t.tag;
             if(i===selected){
                 div.style.background = '#333';
             } else {
@@ -108,7 +152,7 @@
             }
             div.addEventListener('mousedown', (e)=>{
                 e.preventDefault();
-                insert(area, fragment, t);
+                insert(area, fragment, t.tag);
             });
             container.appendChild(div);
         });
@@ -129,12 +173,16 @@
         area.value = before.substring(0,start) + tag + after;
         area.selectionStart = area.selectionEnd = start + tag.length;
         container.style.display='none';
+        skipInput = true;
         area.dispatchEvent(new Event('input',{bubbles:true}));
     }
 
     function attach(area){
         createContainer(area);
-        area.addEventListener('input', ()=>showSuggestions(area));
+        area.addEventListener('input', ()=>{
+            if(skipInput){ skipInput=false; return; }
+            showSuggestions(area);
+        });
         area.addEventListener('keydown', (e)=>{
             if(container.style.display==='none') return;
             const items = container.children;
