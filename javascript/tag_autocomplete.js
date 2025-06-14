@@ -182,11 +182,12 @@
         const before = area.value.substring(0, cursorPos);
         const after = area.value.substring(cursorPos);
         const start = before.lastIndexOf(fragment);
-        area.value = before.substring(0,start) + tag + after;
-        area.selectionStart = area.selectionEnd = start + tag.length;
-        container.style.display='none';
+        const insertion = tag + ', ';
+        area.value = before.substring(0, start) + insertion + after;
+        area.selectionStart = area.selectionEnd = start + insertion.length;
+        container.style.display = 'none';
         skipInput = true;
-        area.dispatchEvent(new Event('input',{bubbles:true}));
+        area.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     function attach(area){
