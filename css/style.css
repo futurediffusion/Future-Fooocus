@@ -485,3 +485,7 @@ div:has(> #positive_prompt) {
   cursor: pointer;
   box-sizing: border-box;
 }
+
+.download_button {
+  width: 100%;
+}

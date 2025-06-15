@@ -22,7 +22,7 @@ from extras.inpaint_mask import SAMOptions
 from modules.private_logger import get_current_html_path
 from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
-from modules.util import is_json
+from modules.util import is_json, get_latest_output_image
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
@@ -233,6 +233,17 @@ with shared.gradio_root:
                                             [sd_upscaler],
                                             modules.sd_upscale.reload_upscalers,
                                             lambda: {"choices": modules.sd_upscale.DEFAULT_UPSCALERS}
+                                        )
+                                    with gr.Row():
+                                        download_button = gr.Button(
+                                            value='Descargar \u2B07\uFE0F',
+                                            elem_id='download-btn',
+                                            elem_classes='download_button'
+                                        )
+                                        download_file = gr.File(
+                                            interactive=False,
+                                            visible=False,
+                                            elem_id='download-file'
                                         )
                                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/390" target="_blank">\U0001F4D4 Documentation</a>')
                     with gr.Tab(label='Image Prompt', id='ip_tab') as ip_tab:
@@ -1157,6 +1168,8 @@ with shared.gradio_root:
             enhance_input_image.upload(lambda: gr.update(value=True), outputs=enhance_checkbox, queue=False, show_progress=False) \
                 .then(trigger_auto_describe, inputs=[describe_methods, enhance_input_image, prompt, describe_apply_styles],
                       outputs=[prompt, style_selections], show_progress=True, queue=True)
+
+        download_button.click(lambda: get_latest_output_image(), outputs=download_file, queue=False, show_progress=False)
 
 def dump_default_english_config():
     from modules.localization import dump_english_config
