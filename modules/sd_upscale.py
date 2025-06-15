@@ -161,6 +161,27 @@ class OptimizedUpscaler:
             print(f"[FooocusUpscale] Could not get uov_method from flags: {e}")
             return 'vary'
 
+    def _get_performance_value(self):
+        """Get the correct performance value as string."""
+        try:
+            from modules import flags
+            # Try to get the string value instead of the enum object
+            if hasattr(flags.Performance, 'QUALITY'):
+                # If it's an enum, get its value
+                quality_enum = flags.Performance.QUALITY
+                if hasattr(quality_enum, 'value'):
+                    return quality_enum.value
+                elif hasattr(quality_enum, 'name'):
+                    return quality_enum.name
+                else:
+                    return str(quality_enum)
+            else:
+                # Fallback to common Fooocus performance strings
+                return 'Quality'
+        except Exception as e:
+            print(f"[FooocusUpscale] Could not get performance from flags: {e}")
+            return 'Quality'
+
     def _process_tile_with_denoising(self, tile_image: Image.Image, tile_info: TileInfo,
                                    upscaler_name: str, prompt: str, denoising_strength: float) -> np.ndarray:
         """Process a single tile with optional denoising using Fooocus's vary/upscale pipeline."""
@@ -185,19 +206,19 @@ class OptimizedUpscaler:
         # Apply denoising if strength > 0
         if denoising_strength > 0.0 and prompt:
             try:
-                # Try to use Fooocus's async worker system with corrected method
+                # Try to use Fooocus's async worker system with corrected parameters
                 from modules.async_worker import AsyncTask
-                from modules import flags
                 
-                # Get the correct uov method
+                # Get the correct values as strings
                 uov_method = self._get_uov_method()
+                performance_value = self._get_performance_value()
                 
                 # Create a task for this tile using the vary/upscale function
                 task = AsyncTask(args=[
                     prompt,                    # prompt
                     '',                       # negative_prompt  
                     [],                       # style_selections
-                    flags.Performance.QUALITY, # performance_selection
+                    performance_value,        # performance_selection - FIXED: use string value
                     'custom',                 # aspect_ratios_selection
                     1,                        # image_number
                     -1,                       # image_seed
@@ -209,7 +230,7 @@ class OptimizedUpscaler:
                     [],                       # loras
                     True,                     # input_image_checkbox
                     'uov',                    # current_tab
-                    uov_method,               # uov_method - corrected reference
+                    uov_method,               # uov_method
                     upscaled_image,           # uov_input_image
                     [],                       # outpaint_selections
                     None,                     # inpaint_input_image
