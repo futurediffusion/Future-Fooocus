@@ -112,13 +112,16 @@ onUiLoaded(async () => {
         });
     }
 
-    document.querySelector('.style_selections').addEventListener('focusout', function (event) {
-        setTimeout(() => {
-            if (!this.contains(document.activeElement)) {
-                on_style_selection_blur();
-            }
-        }, 200);
-    });
+    let styleSelections = document.querySelector('.style_selections');
+    if (styleSelections) {
+        styleSelections.addEventListener('focusout', function (event) {
+            setTimeout(() => {
+                if (!this.contains(document.activeElement)) {
+                    on_style_selection_blur();
+                }
+            }, 200);
+        });
+    }
 
     let inputs = document.querySelectorAll('.lora_weight input[type="range"]');
 
