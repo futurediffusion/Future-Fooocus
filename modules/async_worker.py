@@ -605,11 +605,19 @@ def worker():
         print(f'Image upscaled.')
         if async_task.sd_upscale_checkbox:
             pil_img = Image.fromarray(uov_input_image)
+
+            def upscale_cb(done, total, preview_img):
+                p = current_progress + done / float(total)
+                progressbar(async_task, p, f'SD Upscale {done}/{total} ...')
+                if not async_task.disable_preview:
+                    yield_result(async_task, preview_img, p, async_task.black_out_nsfw, False, do_not_show_finished_images=True)
+
             pil_img = modules.sd_upscale.upscale_image(
                 pil_img,
                 overlap=int(async_task.sd_upscale_tile_overlap),
                 scale_factor=float(async_task.sd_upscale_scale_factor),
-                upscaler_name=async_task.sd_upscale_upscaler
+                upscaler_name=async_task.sd_upscale_upscaler,
+                progress_callback=upscale_cb
             )
             uov_input_image = np.array(pil_img)
         if '1.5x' in uov_method:

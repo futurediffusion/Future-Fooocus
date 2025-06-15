@@ -69,6 +69,7 @@ def upscale_image(
         scale_factor: float,
         tile_size: int = 512,
         upscaler_name: str = "None",
+        progress_callback=None,
 ) -> Image.Image:
     """Upscale ``image`` by ``scale_factor`` while processing tiles individually.
 
@@ -90,6 +91,9 @@ def upscale_image(
     upscaler_name : str, optional
         Name of the ESRGAN model to use.  ``"None"`` disables the model and only
         performs a Lanczos resize.
+    progress_callback : callable, optional
+        Called after each tile is processed with ``(done_tiles, total_tiles,
+        preview_image)``.
     """
 
     import numpy as np
@@ -108,19 +112,25 @@ def upscale_image(
         image = image.resize((w, h), resample=LANCZOS)
 
     grid = split_grid(image, tile_w=tile_size, tile_h=tile_size, overlap=overlap)
+    total_tiles = sum(len(r[2]) for r in grid.tiles)
+    done_tiles = 0
+    combined_image = Image.new('RGB', (grid.image_w, grid.image_h))
 
-    for row_index, (_, th, row) in enumerate(grid.tiles):
+    for row_index, (y, th, row) in enumerate(grid.tiles):
         for col_index, (x, tw, tile) in enumerate(row):
             tile_np = np.array(tile)
             if upscaler_name != "None":
                 tile_np = perform_upscale(tile_np)
-            # return tile to its original size so the grid can be recombined
             tile_np = resample_image(tile_np, width=tw, height=th)
-            row[col_index][2] = Image.fromarray(tile_np)
+            processed_tile = Image.fromarray(tile_np)
+            combined_image.paste(processed_tile.crop((0, 0, tw, th)), (x, y))
+            done_tiles += 1
+            if progress_callback is not None:
+                progress_callback(done_tiles, total_tiles, combined_image)
+            row[col_index][2] = processed_tile
 
-    combined = combine_grid(grid)
     print(
         f'[Future-Sd-Upscale] Finished upscale. Result size: '
-        f'{combined.size}'
+        f'{combined_image.size}'
     )
-    return combined
+    return combined_image
