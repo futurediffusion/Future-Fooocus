@@ -18,6 +18,13 @@ def _find_upscalers():
 DEFAULT_UPSCALERS = _find_upscalers()
 
 
+def reload_upscalers() -> List[str]:
+    """Reload available upscale models from disk."""
+    global DEFAULT_UPSCALERS
+    DEFAULT_UPSCALERS = _find_upscalers()
+    return DEFAULT_UPSCALERS
+
+
 @dataclass
 class Grid:
     image_w: int

@@ -224,9 +224,15 @@ with shared.gradio_root:
                                     sd_denoising_strength = gr.Slider(minimum=0.0, maximum=1.0, step=0.001,
                                                                        label='Denoising Strength',
                                                                        value=modules.config.default_sd_upscale_denoising_strength)
-                                    sd_upscaler = gr.Dropdown(label='Upscaler',
-                                                             choices=modules.sd_upscale.DEFAULT_UPSCALERS,
-                                                             value=modules.config.default_sd_upscale_upscaler)
+                                    with gr.Row():
+                                        sd_upscaler = gr.Dropdown(label='Upscaler',
+                                                                 choices=modules.sd_upscale.DEFAULT_UPSCALERS,
+                                                                 value=modules.config.default_sd_upscale_upscaler)
+                                        ui_common.create_refresh_button(
+                                            [sd_upscaler],
+                                            modules.sd_upscale.reload_upscalers,
+                                            lambda: {"choices": modules.sd_upscale.DEFAULT_UPSCALERS}
+                                        )
                                 sd_upscale_checkbox.change(lambda x: gr.update(visible=x),
                                                            inputs=sd_upscale_checkbox,
                                                            outputs=sd_upscale_panel,
@@ -914,6 +920,7 @@ with shared.gradio_root:
 
                 def refresh_files_clicked():
                     modules.config.update_files()
+                    modules.sd_upscale.reload_upscalers()
                     results = [gr.update(choices=modules.config.model_filenames)]
                     results += [gr.update(choices=['None'] + modules.config.model_filenames)]
                     results += [gr.update(choices=[flags.default_vae] + modules.config.vae_filenames)]
@@ -922,11 +929,13 @@ with shared.gradio_root:
                     for i in range(modules.config.default_max_lora_number):
                         results += [gr.update(interactive=True),
                                     gr.update(choices=['None'] + modules.config.lora_filenames), gr.update()]
+                    results += [gr.update(choices=modules.sd_upscale.DEFAULT_UPSCALERS)]
                     return results
 
                 refresh_files_output = [base_model, refiner_model, vae_name]
                 if not args_manager.args.disable_preset_selection:
                     refresh_files_output += [preset_selection]
+                refresh_files_output += [sd_upscaler]
                 refresh_files.click(refresh_files_clicked, [], refresh_files_output + lora_ctrls,
                                     queue=False, show_progress=False)
 
