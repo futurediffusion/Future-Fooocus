@@ -692,7 +692,14 @@ with shared.gradio_root:
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
                 with gr.Row():
-                    download_button = gr.DownloadButton(label='Descargar \u2B07\uFE0F', visible=False, elem_id='download_button', scale=20)
+                    # Keep the download button visible at all times so users can
+                    # easily access the latest generated image.
+                    download_button = gr.DownloadButton(
+                        label='Descargar \u2B07\uFE0F',
+                        visible=True,
+                        elem_id='download_button',
+                        scale=20,
+                    )
 
             with gr.Tab(label='Styles'):
                 from modules import ui_prompt_styles as ui_styles
@@ -1070,7 +1077,14 @@ with shared.gradio_root:
 
         metadata_import_button.click(trigger_metadata_import, inputs=[metadata_input_image, state_is_generating], outputs=load_data_outputs, queue=False, show_progress=True)
 
-        generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True, gr.update(visible=False)),
+        generate_button.click(lambda: (
+            gr.update(visible=True, interactive=True),
+            gr.update(visible=True, interactive=True),
+            gr.update(visible=False, interactive=False),
+            [],
+            True,
+            gr.update(),  # keep download button visible with previous value
+        ),
                               outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating, download_button]) \
             .then(fn=prepare_seed, inputs=seed_input, outputs=[seed_actual, seed_input]) \
             .then(fn=get_task, inputs=ctrls, outputs=currentTask) \
