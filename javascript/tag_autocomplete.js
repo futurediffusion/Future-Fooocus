@@ -364,9 +364,13 @@
 
     function init(){
         if(!ENABLED) return;
-        const area = document.querySelector('#positive_prompt textarea');
-        if(!area) return;
-        Promise.all([loadTags(), loadChants()]).then(()=>attach(area));
+        const positiveArea = document.querySelector('#positive_prompt textarea');
+        const negativeArea = document.querySelector('#negative_prompt textarea');
+        if(!positiveArea && !negativeArea) return;
+        Promise.all([loadTags(), loadChants()]).then(()=>{
+            if(positiveArea) attach(positiveArea);
+            if(negativeArea) attach(negativeArea);
+        });
     }
 
     if(window.onUiLoaded){
