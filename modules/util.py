@@ -18,6 +18,9 @@ import modules.config
 import modules.sdxl_styles
 from modules.flags import Performance
 
+# Default output directory for generated images
+default_output_dir = modules.config.path_outputs
+
 # Cache to store wildcard file contents along with last modification time
 _wildcard_cache = {}
 
@@ -200,6 +203,24 @@ def generate_temp_filename(folder='./outputs/', extension='png'):
     filename = f"{time_string}_{random_number}.{extension}"
     result = os.path.join(folder, date_string, filename)
     return date_string, os.path.abspath(result), filename
+
+
+def get_latest_output_image() -> str | None:
+    """Return the most recently modified image under the default output directory."""
+    latest_file = None
+    latest_time = -1.0
+    for root, _, files in os.walk(default_output_dir):
+        for name in files:
+            if name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                file_path = os.path.join(root, name)
+                try:
+                    mtime = os.path.getmtime(file_path)
+                    if mtime > latest_time:
+                        latest_time = mtime
+                        latest_file = file_path
+                except OSError:
+                    continue
+    return latest_file
 
 
 def sha256(filename, use_addnet_hash=False, length=HASH_SHA256_LENGTH):
