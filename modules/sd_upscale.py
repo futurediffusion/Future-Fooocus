@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Callable, Tuple
 import numpy as np
 from PIL import Image
+import cv2
 from ldm_patched.utils import path_utils
 
 
@@ -16,6 +17,11 @@ def _find_upscalers():
         print(f"Failed to load upscale models: {e}")
         models = []
     return ['None'] + models
+
+
+def _resample_mask(mask: np.ndarray, width: int, height: int) -> np.ndarray:
+    """Resize mask array to the given width and height using linear interpolation."""
+    return cv2.resize(mask, (int(width), int(height)), interpolation=cv2.INTER_LINEAR)
 
 
 DEFAULT_UPSCALERS = _find_upscalers()
@@ -175,7 +181,10 @@ class OptimizedUpscaler:
         tile_region = tile[:actual_h, :actual_w]
         weight_region = canvas_weight[dst_y:end_y, dst_x:end_x]
         if tile_info.overlap_mask is not None:
-            mask = tile_info.overlap_mask[:actual_h, :actual_w]
+            mask = tile_info.overlap_mask
+            if mask.shape[:2] != (dst_h, dst_w):
+                mask = _resample_mask(mask, dst_w, dst_h)
+            mask = mask[:actual_h, :actual_w]
             if len(canvas_region.shape) == 3:
                 mask = mask[:, :, np.newaxis]
             total_weight = weight_region + mask
