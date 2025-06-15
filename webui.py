@@ -234,10 +234,6 @@ with shared.gradio_root:
                                             modules.sd_upscale.reload_upscalers,
                                             lambda: {"choices": modules.sd_upscale.DEFAULT_UPSCALERS}
                                         )
-                                sd_upscale_checkbox.change(lambda x: gr.update(visible=x),
-                                                           inputs=sd_upscale_checkbox,
-                                                           outputs=sd_upscale_panel,
-                                                           queue=False, show_progress=False)
                                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/390" target="_blank">\U0001F4D4 Documentation</a>')
                     with gr.Tab(label='Image Prompt', id='ip_tab') as ip_tab:
                         with gr.Row():
@@ -603,6 +599,11 @@ with shared.gradio_root:
                     shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
+                sd_upscale_checkbox.change(
+                    lambda x, y: (gr.update(visible=x), gr.update(value=1 if x else y)),
+                    inputs=[sd_upscale_checkbox, image_number],
+                    outputs=[sd_upscale_panel, image_number],
+                    queue=False, show_progress=False)
 
                 with gr.Accordion(label='Advanced', open=False):
 

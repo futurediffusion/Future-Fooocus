@@ -178,6 +178,10 @@ class AsyncTask:
                     enhance_inpaint_erode_or_dilate,
                     enhance_mask_invert
                 ])
+
+        if self.sd_upscale_checkbox and self.image_number != 1:
+            print('[Future-Sd-Upscale] Forcing image_number to 1')
+            self.image_number = 1
         self.should_enhance = self.enhance_checkbox and (self.enhance_uov_method != disabled.casefold() or len(self.enhance_ctrls) > 0)
         self.images_to_enhance_count = 0
         self.enhance_stats = {}
