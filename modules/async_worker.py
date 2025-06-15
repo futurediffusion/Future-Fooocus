@@ -1,4 +1,5 @@
 import threading
+import time
 
 from extras.inpaint_mask import generate_mask_from_image, SAMOptions
 from modules.patch import PatchSettings, patch_settings, patch_all
@@ -185,6 +186,20 @@ class AsyncTask:
         self.should_enhance = self.enhance_checkbox and (self.enhance_uov_method != disabled.casefold() or len(self.enhance_ctrls) > 0)
         self.images_to_enhance_count = 0
         self.enhance_stats = {}
+
+    def execute(self, timeout: float = 60.0, poll_interval: float = 0.1):
+        """Execute task synchronously using the background worker."""
+        async_tasks.append(self)
+        start = time.time()
+        while True:
+            if self.yields:
+                flag, product = self.yields.pop(0)
+                if flag == 'finish':
+                    return product
+            if timeout is not None and time.time() - start > timeout:
+                break
+            time.sleep(poll_interval)
+        return self.results
 
 async_tasks = []
 
