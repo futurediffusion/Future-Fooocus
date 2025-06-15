@@ -143,6 +143,24 @@ class OptimizedUpscaler:
                     mask[h - 1 - i, :] *= i / fade_size
         return mask
 
+    def _get_uov_method(self):
+        """Get the correct upscale method reference."""
+        try:
+            from modules import flags
+            # Try different possible attribute names for upscale method
+            if hasattr(flags, 'uov_method_vary'):
+                return flags.uov_method_vary
+            elif hasattr(flags, 'vary'):
+                return flags.vary
+            elif hasattr(flags, 'upscale_vary'):
+                return flags.upscale_vary
+            else:
+                # Fallback to string if no flag found
+                return 'vary'
+        except Exception as e:
+            print(f"[FooocusUpscale] Could not get uov_method from flags: {e}")
+            return 'vary'
+
     def _process_tile_with_denoising(self, tile_image: Image.Image, tile_info: TileInfo,
                                    upscaler_name: str, prompt: str, denoising_strength: float) -> np.ndarray:
         """Process a single tile with optional denoising using Fooocus's vary/upscale pipeline."""
@@ -167,9 +185,12 @@ class OptimizedUpscaler:
         # Apply denoising if strength > 0
         if denoising_strength > 0.0 and prompt:
             try:
-                # Use Fooocus's async worker system
+                # Try to use Fooocus's async worker system with corrected method
                 from modules.async_worker import AsyncTask
                 from modules import flags
+                
+                # Get the correct uov method
+                uov_method = self._get_uov_method()
                 
                 # Create a task for this tile using the vary/upscale function
                 task = AsyncTask(args=[
@@ -188,7 +209,7 @@ class OptimizedUpscaler:
                     [],                       # loras
                     True,                     # input_image_checkbox
                     'uov',                    # current_tab
-                    flags.upscale_tab,        # uov_method
+                    uov_method,               # uov_method - corrected reference
                     upscaled_image,           # uov_input_image
                     [],                       # outpaint_selections
                     None,                     # inpaint_input_image
