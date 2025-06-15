@@ -908,14 +908,28 @@ def worker():
                 import numpy as np
                 print('[Future-Sd-Upscale] SD Upscale only mode active')
                 pil_img = Image.fromarray(HWC3(async_task.uov_input_image))
+
+                def upscale_cb(done, total, preview_img):
+                    p = 100 * done / float(total)
+                    progressbar(async_task, p, f'SD Upscale {done}/{total} ...')
+                    if not async_task.disable_preview:
+                        yield_result(async_task, preview_img, p, async_task.black_out_nsfw, False,
+                                     do_not_show_finished_images=True)
+
                 pil_img = modules.sd_upscale.upscale_image(
                     pil_img,
                     overlap=int(async_task.sd_upscale_tile_overlap),
                     scale_factor=float(async_task.sd_upscale_scale_factor),
                     upscaler_name=async_task.sd_upscale_upscaler,
+                    progress_callback=upscale_cb,
                 )
                 async_task.uov_input_image = np.array(pil_img)
-                skip_prompt_processing = True
+                progressbar(async_task, 100, 'Saving image to system ...')
+                d = [('Upscale (Fast)', 'upscale_fast', '2x')]
+                uov_input_image_path = log(async_task.uov_input_image, d, output_format=async_task.output_format)
+                yield_result(async_task, uov_input_image_path, 100, async_task.black_out_nsfw, False,
+                             do_not_show_finished_images=True)
+                raise EarlyReturnException
         if (async_task.current_tab == 'inpaint' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_inpaint)) \
                 and isinstance(async_task.inpaint_input_image, dict):
@@ -1193,10 +1207,13 @@ def worker():
         current_progress = 1
 
         if async_task.input_image_checkbox:
-            base_model_additional_loras, clip_vision_path, controlnet_canny_path, controlnet_cpds_path, inpaint_head_model_path, inpaint_image, inpaint_mask, ip_adapter_face_path, ip_adapter_path, ip_negative_path, skip_prompt_processing, use_synthetic_refiner = apply_image_input(
-                async_task, base_model_additional_loras, clip_vision_path, controlnet_canny_path, controlnet_cpds_path,
-                goals, inpaint_head_model_path, inpaint_image, inpaint_mask, inpaint_parameterized, ip_adapter_face_path,
-                ip_adapter_path, ip_negative_path, skip_prompt_processing, use_synthetic_refiner)
+            try:
+                base_model_additional_loras, clip_vision_path, controlnet_canny_path, controlnet_cpds_path, inpaint_head_model_path, inpaint_image, inpaint_mask, ip_adapter_face_path, ip_adapter_path, ip_negative_path, skip_prompt_processing, use_synthetic_refiner = apply_image_input(
+                    async_task, base_model_additional_loras, clip_vision_path, controlnet_canny_path, controlnet_cpds_path,
+                    goals, inpaint_head_model_path, inpaint_image, inpaint_mask, inpaint_parameterized, ip_adapter_face_path,
+                    ip_adapter_path, ip_negative_path, skip_prompt_processing, use_synthetic_refiner)
+            except EarlyReturnException:
+                return
 
         # Load or unload CNs
         progressbar(async_task, current_progress, 'Loading control models ...')
