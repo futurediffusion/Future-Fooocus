@@ -936,6 +936,15 @@ def worker():
                 uov_input_image_path = log(async_task.uov_input_image, d, output_format=async_task.output_format)
                 yield_result(async_task, uov_input_image_path, 100, async_task.black_out_nsfw, False,
                              do_not_show_finished_images=True)
+                # Display the final result once upscale completes.
+                yield_result(
+                    async_task,
+                    uov_input_image_path,
+                    100,
+                    async_task.black_out_nsfw,
+                    False,
+                    do_not_show_finished_images=False,
+                )
                 raise EarlyReturnException
         if (async_task.current_tab == 'inpaint' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_inpaint)) \
