@@ -236,7 +236,7 @@ with shared.gradio_root:
                                             modules.sd_upscale.reload_upscalers,
                                             lambda: {"choices": modules.sd_upscale.DEFAULT_UPSCALERS}
                                         )
-                                        download_button = gr.Button(label="Download Last Image", elem_id='download_last_button')
+                                        download_button = gr.Button(value="\u2B07\uFE0F", label="Download Last Image", elem_id='download_last_button')
                                         download_file = gr.File(interactive=False, visible=False, elem_id='download_last_file')
 
                                         def download_last_image():
