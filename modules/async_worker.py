@@ -890,10 +890,24 @@ def worker():
                           skip_prompt_processing, use_synthetic_refiner):
         if (async_task.current_tab == 'uov' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_vary_upscale)) \
-                and async_task.uov_method != flags.disabled.casefold() and async_task.uov_input_image is not None:
-            async_task.uov_input_image, skip_prompt_processing, async_task.steps = prepare_upscale(
-                async_task, goals, async_task.uov_input_image, async_task.uov_method, async_task.performance_selection,
-                async_task.steps, 1, skip_prompt_processing=skip_prompt_processing)
+                and async_task.uov_input_image is not None:
+            if async_task.uov_method != flags.disabled.casefold():
+                async_task.uov_input_image, skip_prompt_processing, async_task.steps = prepare_upscale(
+                    async_task, goals, async_task.uov_input_image, async_task.uov_method, async_task.performance_selection,
+                    async_task.steps, 1, skip_prompt_processing=skip_prompt_processing)
+            elif async_task.sd_upscale_checkbox:
+                from PIL import Image
+                import numpy as np
+                print('[Future-Sd-Upscale] SD Upscale only mode active')
+                pil_img = Image.fromarray(HWC3(async_task.uov_input_image))
+                pil_img = modules.sd_upscale.upscale_image(
+                    pil_img,
+                    overlap=int(async_task.sd_upscale_tile_overlap),
+                    scale_factor=float(async_task.sd_upscale_scale_factor),
+                    upscaler_name=async_task.sd_upscale_upscaler,
+                )
+                async_task.uov_input_image = np.array(pil_img)
+                skip_prompt_processing = True
         if (async_task.current_tab == 'inpaint' or (
                 async_task.current_tab == 'ip' and async_task.mixing_image_prompt_and_inpaint)) \
                 and isinstance(async_task.inpaint_input_image, dict):
