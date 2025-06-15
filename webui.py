@@ -16,6 +16,7 @@ import modules.meta_parser
 import args_manager
 import copy
 import modules.sd_upscale
+from modules import ui_common
 import launch
 from extras.inpaint_mask import SAMOptions
 from modules.private_logger import get_current_html_path
