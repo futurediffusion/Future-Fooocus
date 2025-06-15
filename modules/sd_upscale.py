@@ -2,6 +2,8 @@ import math
 from dataclasses import dataclass
 from typing import List
 
+from modules.processing import StableDiffusionProcessingImg2Img, process_images
+
 from PIL import Image
 from ldm_patched.utils import path_utils
 
@@ -23,6 +25,23 @@ def reload_upscalers() -> List[str]:
     global DEFAULT_UPSCALERS
     DEFAULT_UPSCALERS = _find_upscalers()
     return DEFAULT_UPSCALERS
+
+
+def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float):
+    """Apply img2img diffusion on a single tile using the given prompt and
+    denoising strength."""
+    p = StableDiffusionProcessingImg2Img(
+        init_images=[tile],
+        prompt=prompt,
+        seed=-1,
+        steps=20,
+        cfg_scale=7.5,
+        width=tile.width,
+        height=tile.height,
+        denoising_strength=denoising_strength,
+    )
+    result = process_images(p)
+    return result.images[0]
 
 
 @dataclass
@@ -70,6 +89,8 @@ def upscale_image(
         tile_size: int = 512,
         upscaler_name: str = "None",
         progress_callback=None,
+        prompt: str = "",
+        denoising_strength: float = 0.0,
 ) -> Image.Image:
     """Upscale ``image`` by ``scale_factor`` while processing tiles individually.
 
@@ -94,6 +115,10 @@ def upscale_image(
     progress_callback : callable, optional
         Called after each tile is processed with ``(done_tiles, total_tiles,
         preview_image)``.
+    prompt : str, optional
+        Prompt used for denoising each tile when ``denoising_strength`` > 0.
+    denoising_strength : float, optional
+        Strength of the img2img denoising applied to each tile.
     """
 
     import numpy as np
@@ -123,6 +148,8 @@ def upscale_image(
                 tile_np = perform_upscale(tile_np)
             tile_np = resample_image(tile_np, width=tw, height=th)
             processed_tile = Image.fromarray(tile_np)
+            if denoising_strength > 0:
+                processed_tile = apply_denoising(processed_tile, prompt, denoising_strength)
             combined_image.paste(processed_tile.crop((0, 0, tw, th)), (x, y))
             done_tiles += 1
             if progress_callback is not None:

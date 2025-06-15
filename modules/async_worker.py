@@ -624,7 +624,9 @@ def worker():
                 overlap=int(async_task.sd_upscale_tile_overlap),
                 scale_factor=float(async_task.sd_upscale_scale_factor),
                 upscaler_name=async_task.sd_upscale_upscaler,
-                progress_callback=upscale_cb
+                progress_callback=upscale_cb,
+                prompt=async_task.prompt,
+                denoising_strength=float(async_task.sd_upscale_denoising_strength),
             )
             uov_input_image = np.array(pil_img)
         if '1.5x' in uov_method:
@@ -929,6 +931,8 @@ def worker():
                     scale_factor=float(async_task.sd_upscale_scale_factor),
                     upscaler_name=async_task.sd_upscale_upscaler,
                     progress_callback=upscale_cb,
+                    prompt=async_task.prompt,
+                    denoising_strength=float(async_task.sd_upscale_denoising_strength),
                 )
                 async_task.uov_input_image = np.array(pil_img)
                 progressbar(async_task, 100, 'Saving image to system ...')
