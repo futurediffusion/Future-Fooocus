@@ -70,11 +70,12 @@ def generate_clicked(task: worker.AsyncTask):
                     gr.update(), \
                     gr.update()
             if flag == 'results':
+                last_img = product[-1] if isinstance(product, list) else product
                 yield gr.update(visible=True), \
                     gr.update(), \
                     gr.update(), \
                     gr.update(), \
-                    gr.update()
+                    gr.update(value=last_img, visible=True)
             if flag == 'finish':
                 if not args_manager.args.disable_enhance_output_sorting:
                     product = sort_enhance_images(product, task)
