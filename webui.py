@@ -236,14 +236,6 @@ with shared.gradio_root:
                                             modules.sd_upscale.reload_upscalers,
                                             lambda: {"choices": modules.sd_upscale.DEFAULT_UPSCALERS}
                                         )
-                                        download_button = gr.Button(value="\u2B07\uFE0F", label="Download Last Image", elem_id='download_last_button')
-                                        download_file = gr.File(interactive=False, visible=False, elem_id='download_last_file')
-
-                                        def download_last_image():
-                                            import modules.private_logger as pl
-                                            return pl.get_last_saved_image()
-
-                                        download_button.click(download_last_image, outputs=download_file, queue=False, show_progress=False)
                                 gr.HTML('<a href="https://github.com/lllyasviel/Fooocus/discussions/390" target="_blank">\U0001F4D4 Documentation</a>')
                     with gr.Tab(label='Image Prompt', id='ip_tab') as ip_tab:
                         with gr.Row():

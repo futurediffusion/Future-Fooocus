@@ -136,10 +136,6 @@ div:has(> #positive_prompt) {
     margin-bottom: 2px;
 }
 
-/* Hide internal file component used for downloading the last image */
-#download_last_file {
-  display: none !important;
-}
 
 /* ratio text with small icon */
 
