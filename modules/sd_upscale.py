@@ -45,10 +45,11 @@ class TileInfo:
     dst_w: int
     dst_h: int
     overlap_mask: Optional[np.ndarray] = None
+    tile_image: Optional[Image.Image] = None  # Store the actual tile for img2img processing
 
 
 class OptimizedUpscaler:
-    """Fooocus optimized upscaler with smart tiling and caching."""
+    """Fooocus optimized upscaler with smart tiling, caching, and denoising support."""
 
     def __init__(self):
         self._cached_model = None
@@ -88,6 +89,7 @@ class OptimizedUpscaler:
         tiles = []
         cols = max(math.ceil((width - overlap) / (tile_size - overlap)), 1)
         rows = max(math.ceil((height - overlap) / (tile_size - overlap)), 1)
+        
         if cols > 1:
             dx = (width - tile_size) / (cols - 1)
         else:
@@ -96,7 +98,9 @@ class OptimizedUpscaler:
             dy = (height - tile_size) / (rows - 1)
         else:
             dy = 0
+            
         print(f"[FooocusUpscale] Grid: {rows}x{cols}, tile_size: {tile_size}, overlap: {overlap}")
+        
         for row in range(rows):
             for col in range(cols):
                 src_x = int(col * dx)
@@ -107,9 +111,11 @@ class OptimizedUpscaler:
                 dst_y = int(src_y * scale_factor)
                 dst_w = int(src_w * scale_factor)
                 dst_h = int(src_h * scale_factor)
+                
                 overlap_mask = self._create_overlap_mask(
                     src_w, src_h, overlap, row, col, rows, cols
                 ) if overlap > 0 else None
+                
                 tiles.append(TileInfo(
                     src_x=src_x, src_y=src_y, src_w=src_w, src_h=src_h,
                     dst_x=dst_x, dst_y=dst_y, dst_w=dst_w, dst_h=dst_h,
@@ -121,51 +127,212 @@ class OptimizedUpscaler:
                             row: int, col: int, rows: int, cols: int) -> np.ndarray:
         mask = np.ones((h, w), dtype=np.float32)
         fade_size = min(overlap, w // 4, h // 4)
+        
         if fade_size > 0:
-            if col > 0:
+            if col > 0:  # Not leftmost column
                 for i in range(fade_size):
                     mask[:, i] *= i / fade_size
-            if col < cols - 1:
+            if col < cols - 1:  # Not rightmost column
                 for i in range(fade_size):
                     mask[:, w - 1 - i] *= i / fade_size
-            if row > 0:
+            if row > 0:  # Not topmost row
                 for i in range(fade_size):
                     mask[i, :] *= i / fade_size
-            if row < rows - 1:
+            if row < rows - 1:  # Not bottommost row
                 for i in range(fade_size):
                     mask[h - 1 - i, :] *= i / fade_size
         return mask
 
-    def _process_tile_batch(self, tiles_data: List[Tuple[np.ndarray, TileInfo]],
-                           upscaler_name: str) -> List[Tuple[np.ndarray, TileInfo]]:
-        model = self._load_model_cached(upscaler_name)
-        if model is None:
-            from modules.util import resample_image
-            results = []
-            for tile_np, info in tiles_data:
-                resized = resample_image(tile_np, info.dst_w, info.dst_h)
-                results.append((resized, info))
-            return results
-        try:
-            from modules.upscaler import upscale_with_model
-            results = []
-            for tile_np, info in tiles_data:
-                if tile_np.dtype != np.uint8:
-                    tile_np = (tile_np * 255).astype(np.uint8)
-                upscaled_np = upscale_with_model(model, tile_np, self._device)
-                if upscaled_np.shape[:2] != (info.dst_h, info.dst_w):
-                    from modules.util import resample_image
-                    upscaled_np = resample_image(upscaled_np, info.dst_w, info.dst_h)
-                results.append((upscaled_np, info))
-            return results
-        except Exception as e:
-            print(f"[FooocusUpscale] Model processing failed: {e}")
-            from modules.util import resample_image
-            results = []
-            for tile_np, info in tiles_data:
-                resized = resample_image(tile_np, info.dst_w, info.dst_h)
-                results.append((resized, info))
-            return results
+    def _process_tile_with_denoising(self, tile_image: Image.Image, tile_info: TileInfo,
+                                   upscaler_name: str, prompt: str, denoising_strength: float) -> np.ndarray:
+        """Process a single tile with optional denoising using img2img pipeline."""
+        
+        # First upscale the tile if upscaler is specified
+        if upscaler_name != "None":
+            model = self._load_model_cached(upscaler_name)
+            if model is not None:
+                try:
+                    tile_np = np.array(tile_image)
+                    from modules.upscaler import upscale_with_model
+                    upscaled_np = upscale_with_model(model, tile_np, self._device)
+                    upscaled_image = Image.fromarray(upscaled_np)
+                except Exception as e:
+                    print(f"[FooocusUpscale] Upscaler failed: {e}")
+                    upscaled_image = tile_image.resize((tile_info.dst_w, tile_info.dst_h), Image.Resampling.LANCZOS)
+            else:
+                upscaled_image = tile_image.resize((tile_info.dst_w, tile_info.dst_h), Image.Resampling.LANCZOS)
+        else:
+            upscaled_image = tile_image.resize((tile_info.dst_w, tile_info.dst_h), Image.Resampling.LANCZOS)
+        
+        # Apply denoising if strength > 0
+        if denoising_strength > 0.0 and prompt:
+            try:
+                # Import Fooocus processing modules
+                from modules import processing
+                from modules.config import default_base_model_name, default_refiner_model_name
+                from modules.flags import Performance
+                
+                # Create processing parameters similar to original SD upscale
+                class ProcessingParams:
+                    def __init__(self):
+                        self.init_images = [upscaled_image]
+                        self.width = tile_info.dst_w
+                        self.height = tile_info.dst_h
+                        self.prompt = prompt
+                        self.negative_prompt = ""
+                        self.seed = -1
+                        self.subseed = -1
+                        self.subseed_strength = 0
+                        self.seed_resize_from_h = 0
+                        self.seed_resize_from_w = 0
+                        self.denoising_strength = denoising_strength
+                        self.cfg_scale = 7.0
+                        self.steps = 20
+                        self.sampler_name = "dpmpp_2m"
+                        self.scheduler = "karras"
+                        self.base_model_name = default_base_model_name
+                        self.refiner_model_name = default_refiner_model_name
+                        self.refiner_switch = 0.8
+                        self.performance = Performance.QUALITY.value
+                        self.guidance_scale = 7.0
+                        self.sharpness = 2.0
+                        self.adm_scaler_positive = 1.5
+                        self.adm_scaler_negative = 0.8
+                        self.adm_scaler_end = 0.3
+                        self.adaptive_cfg = 7.0
+                        self.clip_skip = 2
+                        self.overwrite_step = -1
+                        self.overwrite_switch = -1
+                        self.overwrite_width = -1
+                        self.overwrite_height = -1
+                        self.overwrite_vary_strength = -1
+                        self.overwrite_upscale_strength = -1
+                        self.mixing_image_prompt_and_vary_upscale = False
+                        self.mixing_image_prompt_and_inpaint = False
+                        self.debugging_cn_preprocessor = False
+                        self.skipping_cn_preprocessor = False
+                        self.controlnet_softness = 0.25
+                        self.canny_low_threshold = 64
+                        self.canny_high_threshold = 128
+                        self.freeu_enabled = False
+                        self.freeu_b1 = 1.01
+                        self.freeu_b2 = 1.02
+                        self.freeu_s1 = 0.99
+                        self.freeu_s2 = 0.95
+                        self.debugging_inpaint_preprocessor = False
+                        self.inpaint_disable_initial_latent = False
+                        self.inpaint_engine = 'v1'
+                        self.inpaint_strength = 1.0
+                        self.inpaint_respective_field = 1.0
+                        self.invert_mask_checkbox = False
+                        self.inpaint_erode_or_dilate = 0
+                
+                p = ProcessingParams()
+                
+                # Process the tile through img2img pipeline
+                from modules.async_worker import worker
+                from modules import flags
+                
+                # Set up the task
+                task = {
+                    'prompt': prompt,
+                    'negative_prompt': '',
+                    'style_selections': [],
+                    'performance_selection': Performance.QUALITY.value,
+                    'aspect_ratios_selection': f'{tile_info.dst_w}×{tile_info.dst_h}',
+                    'image_number': 1,
+                    'image_seed': -1,
+                    'sharpness': 2.0,
+                    'guidance_scale': 7.0,
+                    'base_model_name': default_base_model_name,
+                    'refiner_model_name': default_refiner_model_name,
+                    'refiner_switch': 0.8,
+                    'loras': [],
+                    'uov_method': flags.disabled.value,
+                    'uov_input_image': upscaled_image,
+                    'outpaint_selections': [],
+                    'inpaint_input_image': None,
+                    'inpaint_additional_prompt': '',
+                    'inpaint_mask_image_upload': None,
+                    'disable_preview': True,
+                    'disable_intermediate_results': True,
+                    'disable_seed_increment': True,
+                    'adm_scaler_positive': 1.5,
+                    'adm_scaler_negative': 0.8,
+                    'adm_scaler_end': 0.3,
+                    'adaptive_cfg': 7.0,
+                    'clip_skip': 2,
+                    'sampler_name': 'dpmpp_2m',
+                    'scheduler_name': 'karras',
+                    'vae_name': 'Default (model)',
+                    'overwrite_step': -1,
+                    'overwrite_switch': -1,
+                    'overwrite_width': tile_info.dst_w,
+                    'overwrite_height': tile_info.dst_h,
+                    'overwrite_vary_strength': -1,
+                    'overwrite_upscale_strength': denoising_strength,
+                    'mixing_image_prompt_and_vary_upscale': False,
+                    'mixing_image_prompt_and_inpaint': False,
+                    'debugging_cn_preprocessor': False,
+                    'skipping_cn_preprocessor': False,
+                    'controlnet_softness': 0.25,
+                    'canny_low_threshold': 64,
+                    'canny_high_threshold': 128,
+                    'freeu_enabled': False,
+                    'freeu_b1': 1.01,
+                    'freeu_b2': 1.02,
+                    'freeu_s1': 0.99,
+                    'freeu_s2': 0.95,
+                    'debugging_inpaint_preprocessor': False,
+                    'inpaint_disable_initial_latent': False,
+                    'inpaint_engine': 'v1',
+                    'inpaint_strength': 1.0,
+                    'inpaint_respective_field': 1.0,
+                    'invert_mask_checkbox': False,
+                    'inpaint_erode_or_dilate': 0,
+                    'save_final_enhanced_image_only': True,
+                    'save_metadata_to_images': False,
+                    'meta_scheme': 'fooocus',
+                    'meta_parser': 'full',
+                    'save_extension': 'png',
+                    'read_wildcards_in_order': False
+                }
+                
+                # Process through Fooocus pipeline
+                results = worker.process_task(task, callback=lambda x: None)
+                
+                if results and len(results) > 0:
+                    denoised_image = results[0]
+                    return np.array(denoised_image, dtype=np.float32)
+                    
+            except Exception as e:
+                print(f"[FooocusUpscale] Denoising failed for tile: {e}")
+                import traceback
+                traceback.print_exc()
+        
+        # Return upscaled image as numpy array
+        result_np = np.array(upscaled_image, dtype=np.float32)
+        return result_np
+
+    def _process_tile_batch_with_denoising(self, tiles_data: List[Tuple[Image.Image, TileInfo]],
+                                          upscaler_name: str, prompt: str, 
+                                          denoising_strength: float) -> List[Tuple[np.ndarray, TileInfo]]:
+        """Process batch of tiles with upscaling and optional denoising."""
+        results = []
+        
+        for tile_image, info in tiles_data:
+            try:
+                processed_tile = self._process_tile_with_denoising(
+                    tile_image, info, upscaler_name, prompt, denoising_strength
+                )
+                results.append((processed_tile, info))
+            except Exception as e:
+                print(f"[FooocusUpscale] Tile processing failed: {e}")
+                # Fallback to simple resize
+                fallback_np = np.array(tile_image.resize((info.dst_w, info.dst_h), Image.Resampling.LANCZOS), dtype=np.float32)
+                results.append((fallback_np, info))
+        
+        return results
 
     def _blend_tile_with_overlap(self, canvas: np.ndarray, tile: np.ndarray,
                                 tile_info: TileInfo, canvas_weight: np.ndarray):
@@ -196,7 +363,7 @@ class OptimizedUpscaler:
             # Crop mask to actual dimensions
             mask = mask[:actual_h, :actual_w]
             
-            # CRITICAL FIX: Handle 3D canvas properly
+            # Handle 3D canvas properly
             if len(canvas_region.shape) == 3:  # RGB image
                 # Expand mask to 3D for RGB channels
                 mask_3d = np.stack([mask, mask, mask], axis=2)
@@ -246,11 +413,15 @@ class OptimizedUpscaler:
     def upscale_image(self, image: Image.Image, overlap: int, scale_factor: float,
                      tile_size: int = 512, upscaler_name: str = "None",
                      progress_callback: Optional[Callable] = None,
-                     batch_size: int = 4) -> Image.Image:
+                     batch_size: int = 4, prompt: str = "", 
+                     denoising_strength: float = 0.0) -> Image.Image:
         w, h = image.size
         final_w = int(w * scale_factor)
         final_h = int(h * scale_factor)
+        
         print(f"[FooocusUpscale] {w}x{h} -> {final_w}x{final_h} (scale: {scale_factor}, model: {upscaler_name})")
+        if denoising_strength > 0:
+            print(f"[FooocusUpscale] Denoising strength: {denoising_strength}, Prompt: '{prompt[:50]}...'")
         
         tiles = self._calculate_smart_tiles(w, h, tile_size, overlap, scale_factor)
         total_tiles = len(tiles)
@@ -259,41 +430,30 @@ class OptimizedUpscaler:
         canvas = np.zeros((final_h, final_w, 3), dtype=np.float32)
         canvas_weight = np.zeros((final_h, final_w), dtype=np.float32)
         
-        image_np = np.array(image, dtype=np.float32)
-        if image_np.max() > 1.0:
-            image_np = image_np / 255.0  # Normalize if needed
-        
         processed_count = 0
         
+        # Process tiles with denoising support
         for batch_start in range(0, total_tiles, batch_size):
             batch_end = min(batch_start + batch_size, total_tiles)
             batch_tiles = tiles[batch_start:batch_end]
             batch_data = []
             
             for info in batch_tiles:
-                tile_np = image_np[
-                    info.src_y:info.src_y + info.src_h,
-                    info.src_x:info.src_x + info.src_w
-                ].copy()
-                
-                # Ensure proper format for processing
-                if tile_np.max() <= 1.0:
-                    tile_np = (tile_np * 255).astype(np.uint8)
-                
-                batch_data.append((tile_np, info))
+                # Extract tile from original image
+                tile_image = image.crop((
+                    info.src_x, info.src_y,
+                    info.src_x + info.src_w, info.src_y + info.src_h
+                ))
+                batch_data.append((tile_image, info))
             
             try:
-                processed_batch = self._process_tile_batch(batch_data, upscaler_name)
+                # Process batch with denoising
+                processed_batch = self._process_tile_batch_with_denoising(
+                    batch_data, upscaler_name, prompt, denoising_strength
+                )
                 
                 for processed_tile, info in processed_batch:
-                    # Ensure processed tile is float32 for blending
-                    if processed_tile.dtype != np.float32:
-                        if processed_tile.max() > 1.0:
-                            processed_tile = processed_tile.astype(np.float32) / 255.0
-                        else:
-                            processed_tile = processed_tile.astype(np.float32)
-                    
-                    # Scale back to 0-255 range for final canvas
+                    # Ensure processed tile is in correct format
                     if processed_tile.max() <= 1.0:
                         processed_tile = processed_tile * 255.0
                     
@@ -315,6 +475,7 @@ class OptimizedUpscaler:
                 if progress_callback:
                     progress_callback(processed_count, total_tiles, None)
             
+            # Memory cleanup every few batches
             if batch_start % (batch_size * 3) == 0:
                 gc.collect()
                 if torch.cuda.is_available():
@@ -336,7 +497,7 @@ class OptimizedUpscaler:
         result_image = Image.fromarray(final_canvas)
         
         # Cleanup
-        del canvas, canvas_weight, image_np
+        del canvas, canvas_weight
         gc.collect()
         
         print(f"[FooocusUpscale] Completed! Result: {result_image.size}")
@@ -363,6 +524,9 @@ def upscale_image(
         tile_size,
         upscaler_name,
         progress_callback,
+        batch_size=4,
+        prompt=prompt,
+        denoising_strength=denoising_strength,
     )
 
 
