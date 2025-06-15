@@ -35,7 +35,7 @@ def generate_clicked(task: worker.AsyncTask):
 
     with model_management.interrupt_processing_mutex:
         model_management.interrupt_processing = False
-    # outputs=[progress_html, progress_window, progress_gallery, gallery]
+    # outputs=[progress_html, progress_window, progress_gallery, gallery, download_button]
 
     if len(task.args) == 0:
         return
@@ -44,8 +44,9 @@ def generate_clicked(task: worker.AsyncTask):
     finished = False
 
     yield gr.update(visible=True, value=modules.html.make_progress_html(1, 'Waiting for task to start ...')), \
-        gr.update(visible=True, value=None), \
-        gr.update(visible=False, value=None), \
+        gr.update(visible=False), \
+        gr.update(visible=False), \
+        gr.update(visible=False), \
         gr.update(visible=False)
 
     worker.async_tasks.append(task)
@@ -62,24 +63,28 @@ def generate_clicked(task: worker.AsyncTask):
                         # print('Skipped one preview for better internet connection.')
                         continue
 
-                percentage, title, image = product
+                percentage, title, _ = product
                 yield gr.update(visible=True, value=modules.html.make_progress_html(percentage, title)), \
-                    gr.update(visible=True, value=image) if image is not None else gr.update(), \
                     gr.update(), \
-                    gr.update(visible=False)
+                    gr.update(), \
+                    gr.update(), \
+                    gr.update()
             if flag == 'results':
                 yield gr.update(visible=True), \
-                    gr.update(visible=True), \
-                    gr.update(visible=True, value=product), \
-                    gr.update(visible=False)
+                    gr.update(), \
+                    gr.update(), \
+                    gr.update(), \
+                    gr.update()
             if flag == 'finish':
                 if not args_manager.args.disable_enhance_output_sorting:
                     product = sort_enhance_images(product, task)
 
+                last_img = product[-1] if isinstance(product, list) else product
                 yield gr.update(visible=False), \
                     gr.update(visible=False), \
                     gr.update(visible=False), \
-                    gr.update(visible=True, value=product)
+                    gr.update(), \
+                    gr.update(value=last_img, visible=True)
                 finished = True
 
                 # delete Fooocus temp images, only keep gradio temp images
@@ -685,6 +690,8 @@ with shared.gradio_root:
 
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
+                with gr.Row():
+                    download_button = gr.DownloadButton(label='Descargar \u2B07\uFE0F', visible=False, elem_id='download_button', scale=20)
 
             with gr.Tab(label='Styles'):
                 from modules import ui_prompt_styles as ui_styles
@@ -1062,11 +1069,11 @@ with shared.gradio_root:
 
         metadata_import_button.click(trigger_metadata_import, inputs=[metadata_input_image, state_is_generating], outputs=load_data_outputs, queue=False, show_progress=True)
 
-        generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True),
-                              outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating]) \
+        generate_button.click(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), [], True, gr.update(visible=False)),
+                              outputs=[stop_button, skip_button, generate_button, gallery, state_is_generating, download_button]) \
             .then(fn=prepare_seed, inputs=seed_input, outputs=[seed_actual, seed_input]) \
             .then(fn=get_task, inputs=ctrls, outputs=currentTask) \
-            .then(fn=generate_clicked, inputs=currentTask, outputs=[progress_html, progress_window, progress_gallery, gallery]) \
+            .then(fn=generate_clicked, inputs=currentTask, outputs=[progress_html, progress_window, progress_gallery, gallery, download_button]) \
             .then(lambda: (gr.update(visible=True, interactive=True), gr.update(visible=False, interactive=False), gr.update(visible=False, interactive=False), False),
                   outputs=[generate_button, stop_button, skip_button, state_is_generating]) \
             .then(fn=update_history_link, outputs=history_link) \
