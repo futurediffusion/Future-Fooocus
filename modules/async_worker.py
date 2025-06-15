@@ -1146,6 +1146,7 @@ def worker():
     @torch.no_grad()
     def handler(async_task: AsyncTask):
         preparation_start_time = time.perf_counter()
+        processing_start_time = preparation_start_time
         async_task.processing = True
 
         async_task.outpaint_selections = [o.lower() for o in async_task.outpaint_selections]
@@ -1219,6 +1220,7 @@ def worker():
                     goals, inpaint_head_model_path, inpaint_image, inpaint_mask, inpaint_parameterized, ip_adapter_face_path,
                     ip_adapter_path, ip_negative_path, skip_prompt_processing, use_synthetic_refiner)
             except EarlyReturnException:
+                stop_processing(async_task, processing_start_time)
                 return
 
         # Load or unload CNs
@@ -1265,6 +1267,7 @@ def worker():
                 uov_input_image_path = log(async_task.uov_input_image, d, output_format=async_task.output_format)
                 yield_result(async_task, uov_input_image_path, 100, async_task.black_out_nsfw, False,
                              do_not_show_finished_images=True)
+                stop_processing(async_task, processing_start_time)
                 return
 
         if 'inpaint' in goals:
@@ -1282,11 +1285,13 @@ def worker():
                                                                                                     current_progress,
                                                                                                     advance_progress=True)
             except EarlyReturnException:
+                stop_processing(async_task, processing_start_time)
                 return
 
         if 'cn' in goals:
             apply_control_nets(async_task, height, ip_adapter_face_path, ip_adapter_path, width, current_progress)
             if async_task.debugging_cn_preprocessor:
+                stop_processing(async_task, processing_start_time)
                 return
 
         if async_task.freeu_enabled:
