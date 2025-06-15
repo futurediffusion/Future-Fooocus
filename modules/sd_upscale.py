@@ -2,7 +2,8 @@ import math
 from dataclasses import dataclass
 from typing import List
 
-from modules.processing import StableDiffusionProcessingImg2Img, process_images
+from modules import default_pipeline as pipeline
+from modules import core, config
 
 from PIL import Image
 from ldm_patched.utils import path_utils
@@ -27,21 +28,47 @@ def reload_upscalers() -> List[str]:
     return DEFAULT_UPSCALERS
 
 
-def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float):
-    """Apply img2img diffusion on a single tile using the given prompt and
-    denoising strength."""
-    p = StableDiffusionProcessingImg2Img(
-        init_images=[tile],
-        prompt=prompt,
-        seed=-1,
-        steps=20,
-        cfg_scale=7.5,
-        width=tile.width,
-        height=tile.height,
-        denoising_strength=denoising_strength,
+def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -> Image.Image:
+    """Apply Fooocus diffusion on a single tile using ``prompt`` and
+    ``denoising_strength``. This mirrors the behaviour of features such as
+    ``Vary`` and ``Upscale" in the official pipeline."""
+
+    import numpy as np
+
+    # Encode prompt and default negative prompt using Fooocus CLIP pipeline
+    positive_cond = pipeline.clip_encode(texts=[prompt], pool_top_k=1)
+    negative_prompt = config.default_prompt_negative or ""
+    negative_cond = pipeline.clip_encode(texts=[negative_prompt], pool_top_k=1)
+
+    # Prepare latent from image using the currently loaded VAE
+    candidate_vae, _ = pipeline.get_candidate_vae(
+        steps=20, switch=0, denoise=denoising_strength, refiner_swap_method="joint"
     )
-    result = process_images(p)
-    return result.images[0]
+    tile_tensor = core.numpy_to_pytorch(np.array(tile))
+    latent = core.encode_vae(vae=candidate_vae, pixels=tile_tensor, tiled=False)
+    _, _, h, w = latent["samples"].shape
+
+    # Run diffusion on the tile latent
+    images = pipeline.process_diffusion(
+        positive_cond=positive_cond,
+        negative_cond=negative_cond,
+        steps=20,
+        switch=0,
+        width=w * 8,
+        height=h * 8,
+        image_seed=0,
+        callback=None,
+        sampler_name=config.default_sampler,
+        scheduler_name=config.default_scheduler,
+        latent=latent,
+        denoise=denoising_strength,
+        tiled=False,
+        cfg_scale=config.default_cfg_scale,
+        refiner_swap_method="joint",
+        disable_preview=True,
+    )
+
+    return Image.fromarray(images[0])
 
 
 @dataclass
