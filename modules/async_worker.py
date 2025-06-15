@@ -615,8 +615,9 @@ def worker():
             def upscale_cb(done, total, preview_img):
                 p = current_progress + done / float(total)
                 progressbar(async_task, p, f'SD Upscale {done}/{total} ...')
-                if not async_task.disable_preview:
-                    yield_result(async_task, preview_img, p, async_task.black_out_nsfw, False, do_not_show_finished_images=True)
+                # Preview images from SD Upscale occasionally trigger errors in
+                # notebook environments when displayed.  Skip yielding these
+                # images and only update the progress bar.
 
             pil_img = modules.sd_upscale.upscale_image(
                 pil_img,
