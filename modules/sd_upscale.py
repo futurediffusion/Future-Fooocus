@@ -145,7 +145,7 @@ class OptimizedUpscaler:
 
     def _process_tile_with_denoising(self, tile_image: Image.Image, tile_info: TileInfo,
                                    upscaler_name: str, prompt: str, denoising_strength: float) -> np.ndarray:
-        """Process a single tile with optional denoising using img2img pipeline."""
+        """Process a single tile with optional denoising using Fooocus's vary/upscale pipeline."""
         
         # First upscale the tile if upscaler is specified
         if upscaler_name != "None":
@@ -167,139 +167,73 @@ class OptimizedUpscaler:
         # Apply denoising if strength > 0
         if denoising_strength > 0.0 and prompt:
             try:
-                # Import Fooocus processing modules
-                from modules import processing
-                from modules.config import default_base_model_name, default_refiner_model_name
-                from modules.flags import Performance
-                
-                # Create processing parameters similar to original SD upscale
-                class ProcessingParams:
-                    def __init__(self):
-                        self.init_images = [upscaled_image]
-                        self.width = tile_info.dst_w
-                        self.height = tile_info.dst_h
-                        self.prompt = prompt
-                        self.negative_prompt = ""
-                        self.seed = -1
-                        self.subseed = -1
-                        self.subseed_strength = 0
-                        self.seed_resize_from_h = 0
-                        self.seed_resize_from_w = 0
-                        self.denoising_strength = denoising_strength
-                        self.cfg_scale = 7.0
-                        self.steps = 20
-                        self.sampler_name = "dpmpp_2m"
-                        self.scheduler = "karras"
-                        self.base_model_name = default_base_model_name
-                        self.refiner_model_name = default_refiner_model_name
-                        self.refiner_switch = 0.8
-                        self.performance = Performance.QUALITY.value
-                        self.guidance_scale = 7.0
-                        self.sharpness = 2.0
-                        self.adm_scaler_positive = 1.5
-                        self.adm_scaler_negative = 0.8
-                        self.adm_scaler_end = 0.3
-                        self.adaptive_cfg = 7.0
-                        self.clip_skip = 2
-                        self.overwrite_step = -1
-                        self.overwrite_switch = -1
-                        self.overwrite_width = -1
-                        self.overwrite_height = -1
-                        self.overwrite_vary_strength = -1
-                        self.overwrite_upscale_strength = -1
-                        self.mixing_image_prompt_and_vary_upscale = False
-                        self.mixing_image_prompt_and_inpaint = False
-                        self.debugging_cn_preprocessor = False
-                        self.skipping_cn_preprocessor = False
-                        self.controlnet_softness = 0.25
-                        self.canny_low_threshold = 64
-                        self.canny_high_threshold = 128
-                        self.freeu_enabled = False
-                        self.freeu_b1 = 1.01
-                        self.freeu_b2 = 1.02
-                        self.freeu_s1 = 0.99
-                        self.freeu_s2 = 0.95
-                        self.debugging_inpaint_preprocessor = False
-                        self.inpaint_disable_initial_latent = False
-                        self.inpaint_engine = 'v1'
-                        self.inpaint_strength = 1.0
-                        self.inpaint_respective_field = 1.0
-                        self.invert_mask_checkbox = False
-                        self.inpaint_erode_or_dilate = 0
-                
-                p = ProcessingParams()
-                
-                # Process the tile through img2img pipeline
-                from modules.async_worker import worker
+                # Use Fooocus's async worker system
+                from modules.async_worker import AsyncTask
                 from modules import flags
                 
-                # Set up the task
-                task = {
-                    'prompt': prompt,
-                    'negative_prompt': '',
-                    'style_selections': [],
-                    'performance_selection': Performance.QUALITY.value,
-                    'aspect_ratios_selection': f'{tile_info.dst_w}×{tile_info.dst_h}',
-                    'image_number': 1,
-                    'image_seed': -1,
-                    'sharpness': 2.0,
-                    'guidance_scale': 7.0,
-                    'base_model_name': default_base_model_name,
-                    'refiner_model_name': default_refiner_model_name,
-                    'refiner_switch': 0.8,
-                    'loras': [],
-                    'uov_method': flags.disabled.value,
-                    'uov_input_image': upscaled_image,
-                    'outpaint_selections': [],
-                    'inpaint_input_image': None,
-                    'inpaint_additional_prompt': '',
-                    'inpaint_mask_image_upload': None,
-                    'disable_preview': True,
-                    'disable_intermediate_results': True,
-                    'disable_seed_increment': True,
-                    'adm_scaler_positive': 1.5,
-                    'adm_scaler_negative': 0.8,
-                    'adm_scaler_end': 0.3,
-                    'adaptive_cfg': 7.0,
-                    'clip_skip': 2,
-                    'sampler_name': 'dpmpp_2m',
-                    'scheduler_name': 'karras',
-                    'vae_name': 'Default (model)',
-                    'overwrite_step': -1,
-                    'overwrite_switch': -1,
-                    'overwrite_width': tile_info.dst_w,
-                    'overwrite_height': tile_info.dst_h,
-                    'overwrite_vary_strength': -1,
-                    'overwrite_upscale_strength': denoising_strength,
-                    'mixing_image_prompt_and_vary_upscale': False,
-                    'mixing_image_prompt_and_inpaint': False,
-                    'debugging_cn_preprocessor': False,
-                    'skipping_cn_preprocessor': False,
-                    'controlnet_softness': 0.25,
-                    'canny_low_threshold': 64,
-                    'canny_high_threshold': 128,
-                    'freeu_enabled': False,
-                    'freeu_b1': 1.01,
-                    'freeu_b2': 1.02,
-                    'freeu_s1': 0.99,
-                    'freeu_s2': 0.95,
-                    'debugging_inpaint_preprocessor': False,
-                    'inpaint_disable_initial_latent': False,
-                    'inpaint_engine': 'v1',
-                    'inpaint_strength': 1.0,
-                    'inpaint_respective_field': 1.0,
-                    'invert_mask_checkbox': False,
-                    'inpaint_erode_or_dilate': 0,
-                    'save_final_enhanced_image_only': True,
-                    'save_metadata_to_images': False,
-                    'meta_scheme': 'fooocus',
-                    'meta_parser': 'full',
-                    'save_extension': 'png',
-                    'read_wildcards_in_order': False
-                }
+                # Create a task for this tile using the vary/upscale function
+                task = AsyncTask(args=[
+                    prompt,                    # prompt
+                    '',                       # negative_prompt  
+                    [],                       # style_selections
+                    flags.Performance.QUALITY, # performance_selection
+                    'custom',                 # aspect_ratios_selection
+                    1,                        # image_number
+                    -1,                       # image_seed
+                    2.0,                      # sharpness
+                    7.0,                      # guidance_scale
+                    None,                     # base_model_name (use default)
+                    None,                     # refiner_model_name (use default)
+                    0.8,                      # refiner_switch
+                    [],                       # loras
+                    True,                     # input_image_checkbox
+                    'uov',                    # current_tab
+                    flags.upscale_tab,        # uov_method
+                    upscaled_image,           # uov_input_image
+                    [],                       # outpaint_selections
+                    None,                     # inpaint_input_image
+                    '',                       # inpaint_additional_prompt
+                    None,                     # inpaint_mask_image_upload
+                    True,                     # disable_preview
+                    True,                     # disable_intermediate_results
+                    True,                     # disable_seed_increment
+                    1.5,                      # adm_scaler_positive
+                    0.8,                      # adm_scaler_negative
+                    0.3,                      # adm_scaler_end
+                    7.0,                      # adaptive_cfg
+                    2,                        # clip_skip
+                    'dpmpp_2m',              # sampler_name
+                    'karras',                # scheduler_name
+                    'Default (model)',       # vae_name
+                    -1,                      # overwrite_step
+                    -1,                      # overwrite_switch
+                    tile_info.dst_w,         # overwrite_width
+                    tile_info.dst_h,         # overwrite_height
+                    denoising_strength,      # overwrite_vary_strength
+                    -1,                      # overwrite_upscale_strength
+                    False,                   # mixing_image_prompt_and_vary_upscale
+                    False,                   # mixing_image_prompt_and_inpaint
+                    False,                   # debugging_cn_preprocessor
+                    False,                   # skipping_cn_preprocessor
+                    0.25,                    # controlnet_softness
+                    64,                      # canny_low_threshold
+                    128,                     # canny_high_threshold
+                    False,                   # freeu_enabled
+                    1.01,                    # freeu_b1
+                    1.02,                    # freeu_b2
+                    0.99,                    # freeu_s1
+                    0.95,                    # freeu_s2
+                    False,                   # debugging_inpaint_preprocessor
+                    False,                   # inpaint_disable_initial_latent
+                    'v1',                    # inpaint_engine
+                    1.0,                     # inpaint_strength
+                    1.0,                     # inpaint_respective_field
+                    False,                   # invert_mask_checkbox
+                    0,                       # inpaint_erode_or_dilate
+                ])
                 
-                # Process through Fooocus pipeline
-                results = worker.process_task(task, callback=lambda x: None)
+                # Process the task synchronously
+                results = task.execute()
                 
                 if results and len(results) > 0:
                     denoised_image = results[0]
@@ -307,8 +241,7 @@ class OptimizedUpscaler:
                     
             except Exception as e:
                 print(f"[FooocusUpscale] Denoising failed for tile: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"[FooocusUpscale] Falling back to upscaled image without denoising")
         
         # Return upscaled image as numpy array
         result_np = np.array(upscaled_image, dtype=np.float32)
