@@ -419,7 +419,9 @@ def worker():
             d.append(('Metadata Scheme', 'metadata_scheme',
                       async_task.metadata_scheme.value if async_task.save_metadata_to_images else async_task.save_metadata_to_images))
             d.append(('Version', 'version', 'Fooocus v' + fooocus_version.version))
-            img_paths.append(log(x, d, metadata_parser, async_task.output_format, task, persist_image))
+            path = log(x, d, metadata_parser, async_task.output_format, task, persist_image)
+            print(f"DEBUG: Saved image path {path}")
+            img_paths.append(path)
 
         return img_paths
 

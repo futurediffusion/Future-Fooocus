@@ -78,6 +78,7 @@ def generate_clicked(task: worker.AsyncTask):
                 if not args_manager.args.disable_enhance_output_sorting:
                     product = sort_enhance_images(product, task)
 
+                print("DEBUG: Returning final images", product)
                 yield gr.update(visible=False), \
                     gr.update(visible=False), \
                     gr.update(visible=False), \
