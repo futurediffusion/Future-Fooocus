@@ -244,11 +244,23 @@ class OptimizedUpscaler:
 _upscaler_instance = OptimizedUpscaler()
 
 
-def upscale_image(image: Image.Image, overlap: int, scale_factor: float,
-                 tile_size: int = 512, upscaler_name: str = "None",
-                 progress_callback=None) -> Image.Image:
+def upscale_image(
+    image: Image.Image,
+    overlap: int,
+    scale_factor: float,
+    tile_size: int = 512,
+    upscaler_name: str = "None",
+    progress_callback=None,
+    prompt: str = "",
+    denoising_strength: float = 0.0,
+) -> Image.Image:
     return _upscaler_instance.upscale_image(
-        image, overlap, scale_factor, tile_size, upscaler_name, progress_callback
+        image,
+        overlap,
+        scale_factor,
+        tile_size,
+        upscaler_name,
+        progress_callback,
     )
 
 
