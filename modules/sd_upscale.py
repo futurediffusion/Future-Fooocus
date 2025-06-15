@@ -170,13 +170,23 @@ def upscale_image(
 
     for row_index, (y, th, row) in enumerate(grid.tiles):
         for col_index, (x, tw, tile) in enumerate(row):
-            tile_np = np.array(tile)
+            # 1. Optional ESRGAN upscale on the raw tile
             if upscaler_name != "None":
-                tile_np = perform_upscale(tile_np)
+                tile_np = perform_upscale(np.array(tile))
+                tile = Image.fromarray(tile_np)
+
+            # 2. Apply denoising using the Fooocus pipeline
+            if denoising_strength > 0:
+                processed_tile = apply_denoising(tile, prompt, denoising_strength)
+            else:
+                processed_tile = tile
+
+            # 3. Resize back to the expected tile size
+            tile_np = np.array(processed_tile)
             tile_np = resample_image(tile_np, width=tw, height=th)
             processed_tile = Image.fromarray(tile_np)
-            if denoising_strength > 0:
-                processed_tile = apply_denoising(processed_tile, prompt, denoising_strength)
+
+            # 4. Paste into the final combined image
             combined_image.paste(processed_tile.crop((0, 0, tw, th)), (x, y))
             done_tiles += 1
             if progress_callback is not None:
