@@ -169,34 +169,79 @@ class OptimizedUpscaler:
 
     def _blend_tile_with_overlap(self, canvas: np.ndarray, tile: np.ndarray,
                                 tile_info: TileInfo, canvas_weight: np.ndarray):
+        """Fixed blending function that handles broadcasting correctly."""
         dst_x, dst_y = tile_info.dst_x, tile_info.dst_y
         dst_h, dst_w = tile.shape[:2]
+        
+        # Ensure boundaries
         end_y = min(dst_y + dst_h, canvas.shape[0])
         end_x = min(dst_x + dst_w, canvas.shape[1])
         actual_h = end_y - dst_y
         actual_w = end_x - dst_x
+        
         if actual_h <= 0 or actual_w <= 0:
             return
+        
+        # Get regions
         canvas_region = canvas[dst_y:end_y, dst_x:end_x]
         tile_region = tile[:actual_h, :actual_w]
         weight_region = canvas_weight[dst_y:end_y, dst_x:end_x]
+        
         if tile_info.overlap_mask is not None:
+            # Handle mask resizing if needed
             mask = tile_info.overlap_mask
-            if mask.shape[:2] != (dst_h, dst_w):
+            if mask.shape != (dst_h, dst_w):
                 mask = _resample_mask(mask, dst_w, dst_h)
+            
+            # Crop mask to actual dimensions
             mask = mask[:actual_h, :actual_w]
-            if len(canvas_region.shape) == 3:
-                mask = mask[:, :, np.newaxis]
-            total_weight = weight_region + mask
-            np.divide(weight_region * canvas_region + mask * tile_region,
-                     total_weight, out=canvas_region, where=total_weight > 0)
-            weight_region += mask.squeeze() if len(mask.shape) == 3 else mask
+            
+            # CRITICAL FIX: Handle 3D canvas properly
+            if len(canvas_region.shape) == 3:  # RGB image
+                # Expand mask to 3D for RGB channels
+                mask_3d = np.stack([mask, mask, mask], axis=2)
+                
+                # Expand weight to 3D if needed
+                if len(weight_region.shape) == 2:
+                    weight_3d = np.stack([weight_region, weight_region, weight_region], axis=2)
+                else:
+                    weight_3d = weight_region
+                
+                # Safe division with broadcasting
+                total_weight = weight_3d + mask_3d
+                
+                # Avoid division by zero
+                mask_safe = total_weight > 1e-8
+                
+                # Weighted blending for RGB
+                blended = np.zeros_like(canvas_region)
+                blended[mask_safe] = (
+                    (weight_3d[mask_safe] * canvas_region[mask_safe] + 
+                     mask_3d[mask_safe] * tile_region[mask_safe]) / total_weight[mask_safe]
+                )
+                
+                # Update regions
+                canvas_region[mask_safe] = blended[mask_safe]
+                
+                # Update weight (use single channel)
+                weight_region += mask
+                
+            else:  # Grayscale image
+                total_weight = weight_region + mask
+                mask_safe = total_weight > 1e-8
+                
+                blended = np.zeros_like(canvas_region)
+                blended[mask_safe] = (
+                    (weight_region[mask_safe] * canvas_region[mask_safe] + 
+                     mask[mask_safe] * tile_region[mask_safe]) / total_weight[mask_safe]
+                )
+                
+                canvas_region[mask_safe] = blended[mask_safe]
+                weight_region += mask
         else:
+            # Simple replacement for non-overlapping areas
             canvas_region[:] = tile_region
-            if len(weight_region.shape) == 2:
-                weight_region[:] = 1.0
-            else:
-                weight_region[:] = 1.0
+            weight_region.fill(1.0)
 
     def upscale_image(self, image: Image.Image, overlap: int, scale_factor: float,
                      tile_size: int = 512, upscaler_name: str = "None",
@@ -206,26 +251,54 @@ class OptimizedUpscaler:
         final_w = int(w * scale_factor)
         final_h = int(h * scale_factor)
         print(f"[FooocusUpscale] {w}x{h} -> {final_w}x{final_h} (scale: {scale_factor}, model: {upscaler_name})")
+        
         tiles = self._calculate_smart_tiles(w, h, tile_size, overlap, scale_factor)
         total_tiles = len(tiles)
+        
+        # Initialize canvas and weights properly
         canvas = np.zeros((final_h, final_w, 3), dtype=np.float32)
         canvas_weight = np.zeros((final_h, final_w), dtype=np.float32)
-        image_np = np.array(image)
+        
+        image_np = np.array(image, dtype=np.float32)
+        if image_np.max() > 1.0:
+            image_np = image_np / 255.0  # Normalize if needed
+        
         processed_count = 0
+        
         for batch_start in range(0, total_tiles, batch_size):
             batch_end = min(batch_start + batch_size, total_tiles)
             batch_tiles = tiles[batch_start:batch_end]
             batch_data = []
+            
             for info in batch_tiles:
                 tile_np = image_np[
                     info.src_y:info.src_y + info.src_h,
                     info.src_x:info.src_x + info.src_w
                 ].copy()
+                
+                # Ensure proper format for processing
+                if tile_np.max() <= 1.0:
+                    tile_np = (tile_np * 255).astype(np.uint8)
+                
                 batch_data.append((tile_np, info))
+            
             try:
                 processed_batch = self._process_tile_batch(batch_data, upscaler_name)
+                
                 for processed_tile, info in processed_batch:
+                    # Ensure processed tile is float32 for blending
+                    if processed_tile.dtype != np.float32:
+                        if processed_tile.max() > 1.0:
+                            processed_tile = processed_tile.astype(np.float32) / 255.0
+                        else:
+                            processed_tile = processed_tile.astype(np.float32)
+                    
+                    # Scale back to 0-255 range for final canvas
+                    if processed_tile.max() <= 1.0:
+                        processed_tile = processed_tile * 255.0
+                    
                     self._blend_tile_with_overlap(canvas, processed_tile, info, canvas_weight)
+                    
                     processed_count += 1
                     if progress_callback:
                         preview = None
@@ -233,19 +306,39 @@ class OptimizedUpscaler:
                             preview_canvas = np.clip(canvas, 0, 255).astype(np.uint8)
                             preview = Image.fromarray(preview_canvas)
                         progress_callback(processed_count, total_tiles, preview)
+                        
             except Exception as e:
                 print(f"[FooocusUpscale] Batch processing error: {e}")
+                import traceback
+                traceback.print_exc()
                 processed_count += len(batch_tiles)
                 if progress_callback:
                     progress_callback(processed_count, total_tiles, None)
+            
             if batch_start % (batch_size * 3) == 0:
                 gc.collect()
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
+        
+        # Ensure final canvas is in correct range
         final_canvas = np.clip(canvas, 0, 255).astype(np.uint8)
+        
+        # Debug: Check if canvas is all black
+        if final_canvas.max() == 0:
+            print("[FooocusUpscale] WARNING: Final canvas is all black!")
+            print(f"Canvas weight stats: min={canvas_weight.min()}, max={canvas_weight.max()}")
+            print(f"Original canvas stats: min={canvas.min()}, max={canvas.max()}")
+            
+            # Fallback: simple resize if blending failed
+            print("[FooocusUpscale] Falling back to simple resize...")
+            return image.resize((final_w, final_h), Image.Resampling.LANCZOS)
+        
         result_image = Image.fromarray(final_canvas)
+        
+        # Cleanup
         del canvas, canvas_weight, image_np
         gc.collect()
+        
         print(f"[FooocusUpscale] Completed! Result: {result_image.size}")
         return result_image
 
