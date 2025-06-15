@@ -11,6 +11,10 @@ from modules.meta_parser import MetadataParser, get_exif
 from modules.util import generate_temp_filename
 
 log_cache = {}
+last_saved_image_path = None
+
+def get_last_saved_image():
+    return last_saved_image_path
 
 
 def get_current_html_path(output_format=None, folder=None):
@@ -36,6 +40,7 @@ def log(img, metadata, metadata_parser: MetadataParser | None = None, output_for
     parsed_parameters = metadata_parser.to_string(metadata.copy()) if metadata_parser is not None else ''
     image = Image.fromarray(img)
 
+    global last_saved_image_path
     if output_format == OutputFormat.PNG.value:
         if parsed_parameters != '':
             pnginfo = PngInfo()
@@ -50,6 +55,8 @@ def log(img, metadata, metadata_parser: MetadataParser | None = None, output_for
         image.save(local_temp_filename, quality=95, lossless=False, exif=get_exif(parsed_parameters, metadata_parser.get_scheme().value) if metadata_parser else Image.Exif())
     else:
         image.save(local_temp_filename)
+
+    last_saved_image_path = local_temp_filename
 
     if args_manager.args.disable_image_log:
         return local_temp_filename
