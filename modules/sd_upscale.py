@@ -28,22 +28,21 @@ def reload_upscalers() -> List[str]:
     return DEFAULT_UPSCALERS
 
 
-def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -> Image.Image:
-    """Apply Fooocus diffusion on a single tile using ``prompt`` and
-    ``denoising_strength``. This mirrors the behaviour of features such as
+def apply_denoising(
+        tile: Image.Image,
+        denoising_strength: float,
+        *,
+        candidate_vae,
+        positive_cond,
+        negative_cond,
+) -> Image.Image:
+    """Apply Fooocus diffusion on a single tile using the provided
+    conditioning tensors and ``denoising_strength``. This mirrors the behaviour of features such as
     ``Vary`` and ``Upscale" in the official pipeline."""
 
     import numpy as np
 
-    # Encode prompt and default negative prompt using Fooocus CLIP pipeline
-    positive_cond = pipeline.clip_encode(texts=[prompt], pool_top_k=1)
-    negative_prompt = config.default_prompt_negative or ""
-    negative_cond = pipeline.clip_encode(texts=[negative_prompt], pool_top_k=1)
-
-    # Prepare latent from image using the currently loaded VAE
-    candidate_vae, _ = pipeline.get_candidate_vae(
-        steps=20, switch=0, denoise=denoising_strength, refiner_swap_method="joint"
-    )
+    # Prepare latent from image using the cached VAE and encoded prompts
     tile_tensor = core.numpy_to_pytorch(np.array(tile))
     latent = core.encode_vae(vae=candidate_vae, pixels=tile_tensor, tiled=False)
     _, _, h, w = latent["samples"].shape
@@ -168,6 +167,15 @@ def upscale_image(
     done_tiles = 0
     combined_image = Image.new('RGB', (grid.image_w, grid.image_h))
 
+    if denoising_strength > 0:
+        positive_cond = pipeline.clip_encode([prompt], pool_top_k=1)
+        negative_cond = pipeline.clip_encode([config.default_prompt_negative or ""], pool_top_k=1)
+        candidate_vae, _ = pipeline.get_candidate_vae(
+            steps=20, switch=0, denoise=denoising_strength, refiner_swap_method="joint"
+        )
+    else:
+        positive_cond = negative_cond = candidate_vae = None
+
     for row_index, (y, th, row) in enumerate(grid.tiles):
         for col_index, (x, tw, tile) in enumerate(row):
             processed_tile = tile
@@ -179,7 +187,13 @@ def upscale_image(
 
             # 2. Apply denoising using the Fooocus pipeline
             if denoising_strength > 0:
-                processed_tile = apply_denoising(processed_tile, prompt, denoising_strength)
+                processed_tile = apply_denoising(
+                    processed_tile,
+                    denoising_strength,
+                    candidate_vae=candidate_vae,
+                    positive_cond=positive_cond,
+                    negative_cond=negative_cond,
+                )
 
             # 3. Resize back to the expected tile size
             tile_np = np.array(processed_tile)
