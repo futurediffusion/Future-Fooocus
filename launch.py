@@ -111,6 +111,9 @@ def download_models(default_model, checkpoint_downloads, embeddings_downloads, l
         file_name='pytorch_model.bin'
     )
 
+    # Ensure the default upscale model is available
+    config.downloading_upscale_model()
+
     if args.disable_preset_download:
         print('Skipped model download.')
         return default_model, checkpoint_downloads
