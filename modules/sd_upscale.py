@@ -42,6 +42,8 @@ def split_grid(image: Image.Image, tile_w: int = 512, tile_h: int = 512, overlap
     rows = max(math.ceil((h - overlap) / float(tile_h - overlap)), 1)
     dx = (w - tile_w) / max(cols - 1, 1)
     dy = (h - tile_h) / max(rows - 1, 1)
+    print(f'[Future-Sd-Upscale] Splitting image into {rows}x{cols} tiles ' \
+          f'({tile_w}x{tile_h}, overlap={overlap})')
     for row in range(rows):
         y = int(row * dy)
         row_images = []
@@ -94,6 +96,11 @@ def upscale_image(
     from modules.upscaler import perform_upscale
     from modules.util import resample_image, LANCZOS
 
+    print(
+        f'[Future-Sd-Upscale] Starting upscale: factor={scale_factor}, '
+        f'tile_size={tile_size}, overlap={overlap}, model={upscaler_name}'
+    )
+
     # resize the whole image first so tiling operates on the final resolution
     if scale_factor != 1.0:
         w = int(image.width * scale_factor)
@@ -112,4 +119,8 @@ def upscale_image(
             row[col_index][2] = Image.fromarray(tile_np)
 
     combined = combine_grid(grid)
+    print(
+        f'[Future-Sd-Upscale] Finished upscale. Result size: '
+        f'{combined.size}'
+    )
     return combined
