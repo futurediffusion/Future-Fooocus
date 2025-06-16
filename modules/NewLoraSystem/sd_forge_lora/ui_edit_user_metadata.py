@@ -55,6 +55,8 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
         self.edit_activation_text = None
         self.slider_preferred_weight = None
         self.edit_notes = None
+        self.button_add_tags = None
+        self.tags_text = None
 
     def save_lora_user_metadata(self, name, desc, sd_version, activation_text, preferred_weight, negative_text, notes):
         user_metadata = self.get_user_metadata(name)
@@ -123,11 +125,14 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
 
         tags = build_tags(metadata)
         gradio_tags = [(tag, str(count)) for tag, count in tags[0:24]]
+        tags_text = ", ".join([tag for tag, _ in tags])
 
         return [
             *values[0:5],
             item.get("sd_version", "Unknown"),
             gr.HighlightedText.update(value=gradio_tags, visible=True if tags else False),
+            tags_text,
+            gr.update(visible=True if tags else False),
             user_metadata.get('activation text', ''),
             float(user_metadata.get('preferred weight', 0.0)),
             user_metadata.get('negative text', ''),
@@ -166,6 +171,8 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
         self.create_default_editor_elems()
 
         self.taginfo = gr.HighlightedText(label="Training dataset tags")
+        self.button_add_tags = gr.Button('Use these tags in the prompt', visible=False)
+        self.tags_text = gr.Textbox(visible=False)
         self.edit_activation_text = gr.Text(label='Activation text', info="Will be added to prompt along with Lora")
         self.slider_preferred_weight = gr.Slider(label='Preferred weight', info="Set to 0 to disable", minimum=0.0, maximum=2.0, step=0.01)
         self.edit_negative_text = gr.Text(label='Negative prompt', info="Will be added to negative prompts")
@@ -192,6 +199,14 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
 
         self.taginfo.select(fn=select_tag, inputs=[self.edit_activation_text], outputs=[self.edit_activation_text], show_progress=False)
 
+        self.button_add_tags.click(
+            fn=None,
+            _js=f"function(){addTagsToPrompt(gradioApp().querySelector('#{self.tags_text.elem_id} textarea').value, '{self.tabname}')}",
+            inputs=[],
+            outputs=[],
+            show_progress=False,
+        )
+
         self.create_default_buttons()
 
         viewed_components = [
@@ -202,6 +217,8 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
             self.edit_notes,
             self.select_sd_version,
             self.taginfo,
+            self.tags_text,
+            self.button_add_tags,
             self.edit_activation_text,
             self.slider_preferred_weight,
             self.edit_negative_text,

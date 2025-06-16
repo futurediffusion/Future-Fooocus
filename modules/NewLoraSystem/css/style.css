@@ -1667,3 +1667,15 @@ body.resizing .resize-handle {
 #quicksettings .gradio-slider span {
     padding-right: 5px;
 }
+
+.metadata-tags {
+    margin-top: 1em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em;
+}
+.metadata-tags span {
+    background: var(--button-secondary-background-fill);
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+}

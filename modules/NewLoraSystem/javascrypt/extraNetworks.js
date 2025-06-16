@@ -558,13 +558,53 @@ function extraNetworksFlattenMetadata(obj) {
     return result;
 }
 
-function extraNetworksShowMetadata(text) {
+function extractTags(freq){
+    const tags = {};
+    if(!freq) return [];
+    try{
+        for(const key of Object.keys(freq)){
+            const group = freq[key];
+            for(const tag of Object.keys(group)){
+                const cnt = parseInt(group[tag]);
+                tags[tag] = (tags[tag]||0)+cnt;
+            }
+        }
+    }catch(err){
+        console.error(err);
+    }
+    return Object.entries(tags).sort((a,b)=>b[1]-a[1]);
+}
+
+function addTagsToPrompt(tags, tabname){
+    const textarea = gradioApp().querySelector(`#${tabname}_prompt > label > textarea`);
+    if(!textarea) return;
+    updatePromptArea(tags, textarea);
+}
+
+function extraNetworksShowMetadata(text, tabname) {
     try {
         let parsed = JSON.parse(text);
         if (parsed && typeof parsed === 'object') {
+            const tags = extractTags(parsed['ss_tag_frequency']);
             parsed = extraNetworksFlattenMetadata(parsed);
             const table = createVisualizationTable(parsed, 0);
-            popup(table);
+            const container = document.createElement('div');
+            container.appendChild(table);
+            if(tags.length>0){
+                const list = document.createElement('div');
+                list.classList.add('metadata-tags');
+                tags.slice(0,20).forEach(t=>{
+                    const span = document.createElement('span');
+                    span.textContent = t[0];
+                    list.appendChild(span);
+                });
+                const btn = document.createElement('button');
+                btn.textContent = 'Use these tags in the prompt';
+                btn.addEventListener('click',()=>addTagsToPrompt(tags.map(t=>t[0]).join(', '), tabname));
+                container.appendChild(list);
+                container.appendChild(btn);
+            }
+            popup(container);
             return;
         }
     } catch (error) {
@@ -613,19 +653,23 @@ function extraNetworksCopyCardPath(event) {
 function extraNetworksRequestMetadata(event, extraPage) {
     var inlineData = event.target.dataset.metadata;
     if (inlineData) {
-        extraNetworksShowMetadata(inlineData);
+        var pane = event.target.closest('[id$="_cards"]');
+        var tabname = pane ? pane.id.split('_')[0] : 'txt2img';
+        extraNetworksShowMetadata(inlineData, tabname);
         event.stopPropagation();
         return;
     }
     var showError = function() {
-        extraNetworksShowMetadata("there was an error getting metadata");
+        extraNetworksShowMetadata("there was an error getting metadata", tabname);
     };
 
     var cardName = event.target.parentElement.parentElement.getAttribute("data-name");
+    var pane = event.target.closest('[id$="_cards"]');
+    var tabname = pane ? pane.id.split('_')[0] : 'txt2img';
 
     requestGet("./sd_extra_networks/metadata", {page: extraPage, item: cardName}, function(data) {
         if (data && data.metadata) {
-            extraNetworksShowMetadata(data.metadata);
+            extraNetworksShowMetadata(data.metadata, tabname);
         } else {
             showError();
         }
