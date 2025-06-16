@@ -139,24 +139,10 @@ def combine_grid_seamless(grid: Grid, upscaled_tiles: List[List[Image.Image]], s
     combined_array = np.zeros((dst_h, dst_w, 3), dtype=np.float32)
     weight_array = np.zeros((dst_h, dst_w), dtype=np.float32)
 
-    try:
-        scaled_mask = np.array(
-            Image.fromarray(grid.blend_mask).resize(
-                (int(grid.tile_w * scale_factor), int(grid.tile_h * scale_factor)),
-                Image.LANCZOS,
-            )
-        )
-    except Exception:
-        scaled_mask = np.ones(
-            (int(grid.tile_h * scale_factor), int(grid.tile_w * scale_factor)),
-            dtype=np.float32,
-        )
-
-    if scaled_mask.ndim == 0:
-        scaled_mask = np.ones(
-            (int(grid.tile_h * scale_factor), int(grid.tile_w * scale_factor)),
-            dtype=np.float32,
-        )
+    scaled_mask = np.array(Image.fromarray(grid.blend_mask).resize(
+        (int(grid.tile_w * scale_factor), int(grid.tile_h * scale_factor)),
+        Image.LANCZOS
+    ))
 
     for row_idx, (y, th, row) in enumerate(grid.tiles):
         for col_idx, (x, tw, _) in enumerate(row):
@@ -166,28 +152,14 @@ def combine_grid_seamless(grid: Grid, upscaled_tiles: List[List[Image.Image]], s
             dst_th = int(th * scale_factor)
 
             tile_img = upscaled_tiles[row_idx][col_idx]
-            if tile_img is None:
-                tile_img = Image.new('RGB', (dst_tw, dst_th), (0, 0, 0))
             tile_array = np.array(tile_img).astype(np.float32)
-            if tile_array.ndim == 2:
-                tile_array = np.stack([tile_array] * 3, axis=2)
-
-            if dst_y >= dst_h or dst_x >= dst_w:
-                continue
 
             y_end = min(dst_y + dst_th, dst_h)
             x_end = min(dst_x + dst_tw, dst_w)
 
             mask_h = y_end - dst_y
             mask_w = x_end - dst_x
-            tile_array = tile_array[:mask_h, :mask_w]
             current_mask = scaled_mask[:mask_h, :mask_w]
-            if current_mask.ndim == 0:
-                current_mask = np.ones((mask_h, mask_w), dtype=np.float32)
-            elif current_mask.ndim == 3:
-                current_mask = current_mask[:, :, 0]
-            elif current_mask.ndim != 2:
-                current_mask = np.reshape(current_mask, (mask_h, mask_w))
 
             combined_array[dst_y:y_end, dst_x:x_end] += tile_array[:mask_h, :mask_w] * current_mask[:, :, np.newaxis]
             weight_array[dst_y:y_end, dst_x:x_end] += current_mask
@@ -286,17 +258,10 @@ def upscale_image(
         batch_images = [tile_data[2] for tile_data in batch_tiles]
         batch_info = [(td[0], td[1], 0, 0, td[3], td[4]) for td in batch_tiles]
 
-        try:
-            results = processor.process_batch(batch_images, batch_info)
-        except Exception as e:
-            print(f"[Future-Sd-Upscale] Batch failed: {e}")
-            results = [np.zeros((info[4], info[5], 3), dtype=np.uint8) for info in batch_info]
+        results = processor.process_batch(batch_images, batch_info)
 
         for (row_idx, col_idx, _, dst_tw, dst_th), result in zip(batch_tiles, results):
-            try:
-                tile_img = Image.fromarray(result)
-            except Exception:
-                tile_img = Image.new('RGB', (dst_tw, dst_th), (0, 0, 0))
+            tile_img = Image.fromarray(result)
 
             if denoising_strength > 0:
                 tile_img = apply_denoising(tile_img, prompt, denoising_strength, image_seed=seed)
@@ -308,9 +273,7 @@ def upscale_image(
             upscaled_tiles[row_idx][col_idx] = tile_img
             done_tiles += 1
 
-            if progress_callback is not None and (
-                done_tiles == total_tiles or done_tiles % max(1, total_tiles // 10) == 0
-            ):
+            if progress_callback is not None:
                 temp_combined = combine_grid_seamless(grid, upscaled_tiles, scale_factor)
                 progress_callback(done_tiles, total_tiles, temp_combined)
 
