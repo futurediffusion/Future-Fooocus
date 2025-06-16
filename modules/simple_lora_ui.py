@@ -103,8 +103,10 @@ def generate_cards():
     copy_tpl = shared.html('extra-networks-copy-path-button.html')
     meta_tpl = shared.html('extra-networks-metadata-button.html')
     edit_tpl = shared.html('extra-networks-edit-item-button.html')
+    files = list_loras()
+    print('[LoRA UI] Detected files:', files)
     cards = []
-    for filepath in list_loras():
+    for filepath in files:
         name = os.path.splitext(os.path.basename(filepath))[0]
         preview = find_preview(filepath)
         if preview:
@@ -135,7 +137,9 @@ def generate_cards():
             'search_terms': '',
         }
         cards.append(card_tpl.format(**args))
-    return '\n'.join(cards)
+    html_out = '\n'.join(cards)
+    print('[LoRA UI] HTML output:', html_out[:200])
+    return html_out
 
 
 def load_editor(name):

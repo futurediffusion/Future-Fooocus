@@ -709,10 +709,12 @@ with shared.gradio_root:
                 lora_ctrls = []
                 with gr.Group():
                     from modules import simple_lora_ui
+                    print('[LoRA UI] Inserting cards into UI')
                     lora_html = gr.HTML(simple_lora_ui.generate_cards(), elem_id='lora_cards')
                     name_in, button_edit = simple_lora_ui.setup_ui('advanced', gallery, prompt)
 
                     def refresh_loras():
+                        print('[LoRA UI] Refreshing cards')
                         return gr.update(value=simple_lora_ui.generate_cards())
 
                 with gr.Row():
