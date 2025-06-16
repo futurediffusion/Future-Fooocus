@@ -1,6 +1,9 @@
 # [2.5.5](https://github.com/lllyasviel/Fooocus/releases/tag/v2.5.5)
 
 * Fix colab inpaint issue by moving an import statement
+* Add button on LoRA cards to copy the file path to clipboard
+* Clicking a LoRA card now inserts `<lora:name:1>` in the prompt
+* Replace preview button allows using the currently viewed image as card preview
 
 # [2.5.4](https://github.com/lllyasviel/Fooocus/releases/tag/v2.5.4)
 
