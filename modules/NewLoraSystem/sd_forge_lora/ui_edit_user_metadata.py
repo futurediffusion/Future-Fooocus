@@ -1,11 +1,12 @@
 import datetime
 import html
 import random
+import os
 
 import gradio as gr
 import re
 
-from modules import ui_extra_networks_user_metadata
+from modules import ui_extra_networks_user_metadata, lora_utils
 
 
 def is_non_comma_tagset(tags):
@@ -57,6 +58,20 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
         self.edit_notes = None
         self.button_add_tags = None
         self.tags_text = None
+
+    def get_user_metadata(self, name):
+        path = lora_utils.get_lora_path(name)
+        if not path:
+            return {}
+        return lora_utils.read_user_metadata(path)
+
+    def write_user_metadata(self, name, metadata):
+        path = lora_utils.get_lora_path(name)
+        if not path:
+            return
+        lora_utils.write_user_metadata(path, metadata)
+        metadata_path = os.path.splitext(path)[0] + '.json'
+        self.page.lister.update_file_entry(metadata_path)
 
     def save_lora_user_metadata(self, name, desc, sd_version, activation_text, preferred_weight, negative_text, notes):
         user_metadata = self.get_user_metadata(name)
