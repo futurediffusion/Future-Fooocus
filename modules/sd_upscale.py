@@ -1,8 +1,6 @@
 import math
 from dataclasses import dataclass
-from typing import List, Tuple, Optional, Callable
-import threading
-from concurrent.futures import ThreadPoolExecutor
+from typing import List
 
 from modules import default_pipeline as pipeline
 from modules import core, config
@@ -10,7 +8,6 @@ import gc
 import torch
 
 from PIL import Image
-import numpy as np
 from ldm_patched.utils import path_utils
 
 
@@ -88,116 +85,26 @@ class Grid:
     tile_h: int
     overlap: int
     tiles: List
-    blend_mask: Optional[np.ndarray] = None
-
-
-def create_blend_mask(tile_w: int, tile_h: int, overlap: int) -> np.ndarray:
-    """Create a feathered blend mask used when recombining tiles."""
-    mask = np.ones((tile_h, tile_w), dtype=np.float32)
-    feather_size = min(overlap // 2, 32)
-    if feather_size > 0:
-        for i in range(feather_size):
-            mask[i, :] *= i / feather_size
-            mask[-(i + 1), :] *= i / feather_size
-            mask[:, i] *= i / feather_size
-            mask[:, -(i + 1)] *= i / feather_size
-    return mask
 
 
 def split_grid(image: Image.Image, tile_w: int = 512, tile_h: int = 512, overlap: int = 64) -> Grid:
     w, h = image.size
     grid = Grid(image_w=w, image_h=h, tile_w=tile_w, tile_h=tile_h, overlap=overlap, tiles=[])
-
     cols = max(math.ceil((w - overlap) / float(tile_w - overlap)), 1)
     rows = max(math.ceil((h - overlap) / float(tile_h - overlap)), 1)
-
-    dx = (w - tile_w) / max(cols - 1, 1) if cols > 1 else 0
-    dy = (h - tile_h) / max(rows - 1, 1) if rows > 1 else 0
-
-    grid.blend_mask = create_blend_mask(tile_w, tile_h, overlap)
-
+    dx = (w - tile_w) / max(cols - 1, 1)
+    dy = (h - tile_h) / max(rows - 1, 1)
     print(f'[Future-Sd-Upscale] Splitting image into {rows}x{cols} tiles ' \
           f'({tile_w}x{tile_h}, overlap={overlap})')
-
     for row in range(rows):
-        y = min(int(row * dy), h - tile_h)
+        y = int(row * dy)
         row_images = []
         for col in range(cols):
-            x = min(int(col * dx), w - tile_w)
+            x = int(col * dx)
             tile = image.crop((x, y, x + tile_w, y + tile_h))
             row_images.append([x, tile_w, tile])
         grid.tiles.append([y, tile_h, row_images])
-
     return grid
-
-
-def combine_grid_seamless(grid: Grid, upscaled_tiles: List[List[Image.Image]], scale_factor: float) -> Image.Image:
-    """Combine tiles using feathered blending to hide seams."""
-    dst_w = int(grid.image_w * scale_factor)
-    dst_h = int(grid.image_h * scale_factor)
-
-    combined_array = np.zeros((dst_h, dst_w, 3), dtype=np.float32)
-    weight_array = np.zeros((dst_h, dst_w), dtype=np.float32)
-
-    scaled_mask = np.array(Image.fromarray(grid.blend_mask).resize(
-        (int(grid.tile_w * scale_factor), int(grid.tile_h * scale_factor)),
-        Image.LANCZOS
-    ))
-
-    for row_idx, (y, th, row) in enumerate(grid.tiles):
-        for col_idx, (x, tw, _) in enumerate(row):
-            dst_x = int(x * scale_factor)
-            dst_y = int(y * scale_factor)
-            dst_tw = int(tw * scale_factor)
-            dst_th = int(th * scale_factor)
-
-            tile_img = upscaled_tiles[row_idx][col_idx]
-            tile_array = np.array(tile_img).astype(np.float32)
-
-            y_end = min(dst_y + dst_th, dst_h)
-            x_end = min(dst_x + dst_tw, dst_w)
-
-            mask_h = y_end - dst_y
-            mask_w = x_end - dst_x
-            current_mask = scaled_mask[:mask_h, :mask_w]
-
-            combined_array[dst_y:y_end, dst_x:x_end] += tile_array[:mask_h, :mask_w] * current_mask[:, :, np.newaxis]
-            weight_array[dst_y:y_end, dst_x:x_end] += current_mask
-
-    weight_array = np.maximum(weight_array, 1e-8)
-    combined_array /= weight_array[:, :, np.newaxis]
-
-    return Image.fromarray(np.clip(combined_array, 0, 255).astype(np.uint8))
-
-
-class TileProcessor:
-    """Thread-safe tile processor with optional ESRGAN upscale."""
-
-    def __init__(self, upscaler_name: str, max_memory_tiles: int = 8):
-        self.upscaler_name = upscaler_name
-        self.max_memory_tiles = max_memory_tiles
-        self._lock = threading.Lock()
-
-    def process_batch(self, batch_images: List[np.ndarray], batch_info: List[Tuple]) -> List[np.ndarray]:
-        if not batch_images:
-            return []
-
-        try:
-            if self.upscaler_name != "None":
-                from modules.upscaler import perform_upscale
-                with self._lock:
-                    upscaled = perform_upscale(np.stack(batch_images), self.upscaler_name)
-            else:
-                from modules.util import resample_image
-                upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
-        except Exception as e:
-            print(f"[Future-Sd-Upscale] ESRGAN failed: {e}. Falling back to Lanczos resize.")
-            from modules.util import resample_image
-            upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
-
-        if isinstance(upscaled, np.ndarray):
-            return list(upscaled)
-        return upscaled
 
 
 def combine_grid(grid: Grid) -> Image.Image:
@@ -215,90 +122,123 @@ def upscale_image(
         tile_size: int = 512,
         upscaler_name: str = "None",
         batch_size: int = 4,
-        progress_callback: Optional[Callable] = None,
+        progress_callback=None,
         prompt: str = "",
         denoising_strength: float = 0.0,
-        seed: Optional[int] = None,
-        num_threads: int = 2,
+        seed: int | None = None,
 ) -> Image.Image:
-    """Optimized upscale with seamless blending and parallel processing."""
+    """Upscale ``image`` by ``scale_factor`` while processing tiles individually.
+
+    This helper is used by ``async_worker`` when the *SD Upscale* checkbox is
+    enabled.  The original implementation was a placeholder that merely resized
+    the input image.  This version performs a real tile based upscale so the
+    input image and overlap values have visible effect.
+
+    Parameters
+    ----------
+    image : PIL.Image
+        Image to be upscaled.
+    overlap : int
+        Overlap size between tiles.
+    scale_factor : float
+        Overall scaling factor for the image.
+    tile_size : int, optional
+        Size of each tile processed individually, by default ``512``.
+    upscaler_name : str, optional
+        Name of the ESRGAN model to use. ``"None"`` disables the model and only
+        performs a Lanczos resize.
+    batch_size : int, optional
+        Number of tiles processed simultaneously, by default ``4``.
+    progress_callback : callable, optional
+        Called after each tile is processed with ``(done_tiles, total_tiles,
+        preview_image)``.
+    prompt : str, optional
+        Prompt used for denoising each tile when ``denoising_strength > 0``.
+    denoising_strength : float, optional
+        Strength of the img2img denoising applied to each tile.
+    seed : int, optional
+        Seed used for the denoising diffusion. If ``None`` a random seed is used.
+    """
+
+    import numpy as np
+    from modules.upscaler import perform_upscale
+    from modules.util import resample_image, LANCZOS
 
     print(
-        f'[Future-Sd-Upscale] Starting optimized upscale: factor={scale_factor}, '
+        f'[Future-Sd-Upscale] Starting upscale: factor={scale_factor}, '
         f'tile_size={tile_size}, overlap={overlap}, model={upscaler_name}, '
-        f'batch={batch_size}, threads={num_threads}'
+        f'batch={batch_size}'
     )
 
-    effective_overlap = max(overlap, 32)
-    if effective_overlap != overlap:
-        print(f'[Future-Sd-Upscale] Increased overlap from {overlap} to {effective_overlap} for better blending')
+    # do not resize the whole image beforehand
 
-    grid = split_grid(image, tile_w=tile_size, tile_h=tile_size, overlap=effective_overlap)
+    grid = split_grid(image, tile_w=tile_size, tile_h=tile_size, overlap=overlap)
     total_tiles = sum(len(r[2]) for r in grid.tiles)
     done_tiles = 0
+    dst_w = int(grid.image_w * scale_factor)
+    dst_h = int(grid.image_h * scale_factor)
+    combined_image = Image.new('RGB', (dst_w, dst_h))
 
-    upscaled_tiles = [[None for _ in row[2]] for row in grid.tiles]
+    batch_images = []
+    batch_info = []
+    batch_counter = 0
 
-    processor = TileProcessor(upscaler_name, max_memory_tiles=batch_size * 2)
-
-    all_tiles = []
-    for row_idx, (y, th, row) in enumerate(grid.tiles):
-        for col_idx, (x, tw, tile) in enumerate(row):
-            dst_tw = int(tw * scale_factor)
-            dst_th = int(th * scale_factor)
-            all_tiles.append((row_idx, col_idx, np.array(tile), dst_tw, dst_th))
-
-    def process_tile_batch(batch_start: int, batch_end: int):
-        nonlocal done_tiles
-        batch_tiles = all_tiles[batch_start:batch_end]
-
-        if not batch_tiles:
+    def process_batch():
+        nonlocal batch_images, batch_info, batch_counter, done_tiles
+        if not batch_images:
             return
+        try:
+            if upscaler_name != "None":
+                upscaled = perform_upscale(np.stack(batch_images), upscaler_name)
+            else:
+                upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
+        except Exception as e:
+            print(f"[Future-Sd-Upscale] ESRGAN failed: {e}. Falling back to Lanczos resize.")
+            upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
 
-        batch_images = [tile_data[2] for tile_data in batch_tiles]
-        batch_info = [(td[0], td[1], 0, 0, td[3], td[4]) for td in batch_tiles]
+        if isinstance(upscaled, np.ndarray):
+            results = list(upscaled)
+        else:
+            results = upscaled
 
-        results = processor.process_batch(batch_images, batch_info)
-
-        for (row_idx, col_idx, _, dst_tw, dst_th), result in zip(batch_tiles, results):
-            tile_img = Image.fromarray(result)
-
+        for (row_idx, col_idx, dx, dy, d_tw, d_th), out_np in zip(batch_info, results):
+            tile_img = Image.fromarray(out_np)
             if denoising_strength > 0:
                 tile_img = apply_denoising(tile_img, prompt, denoising_strength, image_seed=seed)
-
-            from modules.util import resample_image
-            tile_np = resample_image(np.array(tile_img), width=dst_tw, height=dst_th)
+            tile_np = np.array(tile_img)
+            tile_np = resample_image(tile_np, width=d_tw, height=d_th)
             tile_img = Image.fromarray(tile_np)
-
-            upscaled_tiles[row_idx][col_idx] = tile_img
+            combined_image.paste(tile_img.crop((0, 0, d_tw, d_th)), (dx, dy))
             done_tiles += 1
-
             if progress_callback is not None:
-                temp_combined = combine_grid_seamless(grid, upscaled_tiles, scale_factor)
-                progress_callback(done_tiles, total_tiles, temp_combined)
+                progress_callback(done_tiles, total_tiles, combined_image)
+            grid.tiles[row_idx][2][col_idx][2] = tile_img
 
-    batch_ranges = [(i, min(i + batch_size, len(all_tiles))) for i in range(0, len(all_tiles), batch_size)]
-
-    if num_threads > 1 and len(batch_ranges) > 1:
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            futures = [executor.submit(process_tile_batch, start, end) for start, end in batch_ranges]
-            for i, future in enumerate(futures):
-                future.result()
-                if i % 2 == 0:
-                    gc.collect()
-                    if torch.cuda.is_available():
-                        torch.cuda.empty_cache()
-    else:
-        for start, end in batch_ranges:
-            process_tile_batch(start, end)
+        batch_images = []
+        batch_info = []
+        batch_counter += 1
+        if batch_counter % 3 == 0:
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
-    combined_image = combine_grid_seamless(grid, upscaled_tiles, scale_factor)
+    for row_index, (y, th, row) in enumerate(grid.tiles):
+        for col_index, (x, tw, tile) in enumerate(row):
+            dst_x = int(x * scale_factor)
+            dst_y = int(y * scale_factor)
+            dst_tw = int(tw * scale_factor)
+            dst_th = int(th * scale_factor)
+
+            batch_images.append(np.array(tile))
+            batch_info.append((row_index, col_index, dst_x, dst_y, dst_tw, dst_th))
+
+            if len(batch_images) >= batch_size:
+                process_batch()
+
+    process_batch()
 
     print(
-        f'[Future-Sd-Upscale] Finished optimized upscale. Result size: '
+        f'[Future-Sd-Upscale] Finished upscale. Result size: '
         f'{combined_image.size}'
     )
     return combined_image
