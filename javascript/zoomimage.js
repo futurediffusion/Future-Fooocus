@@ -6,6 +6,8 @@ onUiLoaded(() => {
     }
 
     img.classList.add('zoomable');
+    img.draggable = false;
+    img.addEventListener('dragstart', (e) => e.preventDefault());
 
     let scale = 1.0;
     let panX = 0;
@@ -44,6 +46,7 @@ onUiLoaded(() => {
         startX = e.clientX;
         startY = e.clientY;
         img.style.cursor = 'grabbing';
+        e.preventDefault();
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -55,10 +58,14 @@ onUiLoaded(() => {
         applyTransform();
     });
 
-    document.addEventListener('mouseup', () => {
+    function stopDrag() {
         dragging = false;
         img.style.cursor = '';
-    });
+    }
+
+    document.addEventListener('mouseup', stopDrag);
+    img.addEventListener('mouseup', stopDrag);
+    modal.addEventListener('mouseleave', stopDrag);
 
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
