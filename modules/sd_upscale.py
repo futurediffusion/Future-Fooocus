@@ -4,6 +4,8 @@ from typing import List
 
 from modules import default_pipeline as pipeline
 from modules import core, config
+import gc
+import torch
 
 from PIL import Image
 from ldm_patched.utils import path_utils
@@ -113,8 +115,9 @@ def upscale_image(
         image: Image.Image,
         overlap: int,
         scale_factor: float,
-        tile_size: int = 512,
-        upscaler_name: str = "None",
+        tile_size: int = 384,
+        upscaler_name: str = "RealESRGAN_x4plus",
+        batch_size: int = 4,
         progress_callback=None,
         prompt: str = "",
         denoising_strength: float = 0.0,
@@ -135,10 +138,12 @@ def upscale_image(
     scale_factor : float
         Overall scaling factor for the image.
     tile_size : int, optional
-        Size of each tile processed individually, by default ``512``.
+        Size of each tile processed individually, by default ``384``.
     upscaler_name : str, optional
-        Name of the ESRGAN model to use.  ``"None"`` disables the model and only
+        Name of the ESRGAN model to use. ``"None"`` disables the model and only
         performs a Lanczos resize.
+    batch_size : int, optional
+        Number of tiles processed simultaneously, by default ``4``.
     progress_callback : callable, optional
         Called after each tile is processed with ``(done_tiles, total_tiles,
         preview_image)``.
@@ -154,44 +159,76 @@ def upscale_image(
 
     print(
         f'[Future-Sd-Upscale] Starting upscale: factor={scale_factor}, '
-        f'tile_size={tile_size}, overlap={overlap}, model={upscaler_name}'
+        f'tile_size={tile_size}, overlap={overlap}, model={upscaler_name}, '
+        f'batch={batch_size}'
     )
 
-    # resize the whole image first so tiling operates on the final resolution
-    if scale_factor != 1.0:
-        w = int(image.width * scale_factor)
-        h = int(image.height * scale_factor)
-        image = image.resize((w, h), resample=LANCZOS)
+    # do not resize the whole image beforehand
 
     grid = split_grid(image, tile_w=tile_size, tile_h=tile_size, overlap=overlap)
     total_tiles = sum(len(r[2]) for r in grid.tiles)
     done_tiles = 0
-    combined_image = Image.new('RGB', (grid.image_w, grid.image_h))
+    dst_w = int(grid.image_w * scale_factor)
+    dst_h = int(grid.image_h * scale_factor)
+    combined_image = Image.new('RGB', (dst_w, dst_h))
 
-    for row_index, (y, th, row) in enumerate(grid.tiles):
-        for col_index, (x, tw, tile) in enumerate(row):
-            processed_tile = tile
+    batch_images = []
+    batch_info = []
+    batch_counter = 0
 
-            # 1. Optional ESRGAN upscale on the raw tile
+    def process_batch():
+        nonlocal batch_images, batch_info, batch_counter, done_tiles
+        if not batch_images:
+            return
+        try:
             if upscaler_name != "None":
-                tile_np = perform_upscale(np.array(processed_tile))
-                processed_tile = Image.fromarray(tile_np)
+                upscaled = perform_upscale(np.stack(batch_images), upscaler_name)
+            else:
+                upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
+        except Exception as e:
+            print(f"[Future-Sd-Upscale] ESRGAN failed: {e}. Falling back to Lanczos resize.")
+            upscaled = [resample_image(img, info[4], info[5]) for img, info in zip(batch_images, batch_info)]
 
-            # 2. Apply denoising using the Fooocus pipeline
+        if isinstance(upscaled, np.ndarray):
+            results = list(upscaled)
+        else:
+            results = upscaled
+
+        for (row_idx, col_idx, dx, dy, d_tw, d_th), out_np in zip(batch_info, results):
+            tile_img = Image.fromarray(out_np)
             if denoising_strength > 0:
-                processed_tile = apply_denoising(processed_tile, prompt, denoising_strength)
-
-            # 3. Resize back to the expected tile size
-            tile_np = np.array(processed_tile)
-            tile_np = resample_image(tile_np, width=tw, height=th)
-            processed_tile = Image.fromarray(tile_np)
-
-            # 4. Paste into the final combined image
-            combined_image.paste(processed_tile.crop((0, 0, tw, th)), (x, y))
+                tile_img = apply_denoising(tile_img, prompt, denoising_strength)
+            tile_np = np.array(tile_img)
+            tile_np = resample_image(tile_np, width=d_tw, height=d_th)
+            tile_img = Image.fromarray(tile_np)
+            combined_image.paste(tile_img.crop((0, 0, d_tw, d_th)), (dx, dy))
             done_tiles += 1
             if progress_callback is not None:
                 progress_callback(done_tiles, total_tiles, combined_image)
-            row[col_index][2] = processed_tile
+            grid.tiles[row_idx][2][col_idx][2] = tile_img
+
+        batch_images = []
+        batch_info = []
+        batch_counter += 1
+        if batch_counter % 3 == 0:
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+    for row_index, (y, th, row) in enumerate(grid.tiles):
+        for col_index, (x, tw, tile) in enumerate(row):
+            dst_x = int(x * scale_factor)
+            dst_y = int(y * scale_factor)
+            dst_tw = int(tw * scale_factor)
+            dst_th = int(th * scale_factor)
+
+            batch_images.append(np.array(tile))
+            batch_info.append((row_index, col_index, dst_x, dst_y, dst_tw, dst_th))
+
+            if len(batch_images) >= batch_size:
+                process_batch()
+
+    process_batch()
 
     print(
         f'[Future-Sd-Upscale] Finished upscale. Result size: '
