@@ -23,6 +23,7 @@ from modules.private_logger import get_current_html_path
 from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
+from modules import simple_lora_ui
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
@@ -705,23 +706,17 @@ with shared.gradio_root:
                     refiner_model.change(lambda x: gr.update(visible=x != 'None'),
                                          inputs=refiner_model, outputs=refiner_switch, show_progress=False, queue=False)
 
+                lora_ctrls = []
                 with gr.Group():
-                    lora_ctrls = []
+                    from modules import simple_lora_ui
+                    lora_html = gr.HTML(simple_lora_ui.generate_cards(), elem_id='lora_cards')
 
-                    for i, (enabled, filename, weight) in enumerate(modules.config.default_loras):
-                        with gr.Row():
-                            lora_enabled = gr.Checkbox(label='Enable', value=enabled,
-                                                       elem_classes=['lora_enable', 'min_check'], scale=1)
-                            lora_model = gr.Dropdown(label=f'LoRA {i + 1}',
-                                                     choices=['None'] + modules.config.lora_filenames, value=filename,
-                                                     elem_classes='lora_model', scale=5)
-                            lora_weight = gr.Slider(label='Weight', minimum=modules.config.default_loras_min_weight,
-                                                    maximum=modules.config.default_loras_max_weight, step=0.01, value=weight,
-                                                    elem_classes='lora_weight', scale=5)
-                            lora_ctrls += [lora_enabled, lora_model, lora_weight]
+                    def refresh_loras():
+                        return gr.update(value=simple_lora_ui.generate_cards())
 
                 with gr.Row():
                     refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
+                    refresh_files.click(fn=refresh_loras, outputs=lora_html, queue=False, show_progress=False)
 
             with gr.Tab(label='Styles'):
                 from modules import ui_prompt_styles as ui_styles
