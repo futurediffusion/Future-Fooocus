@@ -957,20 +957,17 @@ footer {
     margin-left: 0.5em;
 }
 
-.extra-network-pane .card .button-row{
-    display: inline-flex;
-    visibility: hidden;
-    color: white;
-}
-
-.extra-network-pane .card .button-row {
+.extra-network-pane .card .card-buttons{
     position: absolute;
-    right: 0;
+    top: 5px;
+    right: 5px;
+    display: none;
+    color: white;
     z-index: 1;
 }
 
-.extra-network-pane .card:hover .button-row{
-    visibility: visible;
+.extra-network-pane .card:hover .card-buttons{
+    display: block;
 }
 
 .extra-network-pane .card-button{
@@ -1090,10 +1087,10 @@ footer {
 }
 
 .extra-network-pane .card .preview{
-    position: absolute;
+    width: 160px;
+    height: auto;
+    border-radius: 6px;
     object-fit: cover;
-    width: 100%;
-    height:100%;
 }
 
 .edit-user-metadata {
@@ -1648,16 +1645,16 @@ body.resizing .resize-handle {
     display: inline-flex;
 }
 
-.extra-network-tree .tree-list-content .button-row {
-    display: inline-flex;
-    visibility: hidden;
+.extra-network-tree .tree-list-content .card-buttons {
+    display: none;
     color: var(--button-secondary-text-color);
-    width: 0;
+    position: absolute;
+    right: 5px;
+    top: 5px;
 }
 
-.extra-network-tree .tree-list-content:hover .button-row {
-    visibility: visible;
-    width: auto;
+.extra-network-tree .tree-list-content:hover .card-buttons {
+    display: block;
 }
 
 .prompt textarea[disabled] {

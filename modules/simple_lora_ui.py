@@ -62,8 +62,10 @@ def generate_cards():
         prompt_text = f"<lora:{name}:{weight}>"
         if activation_text:
             prompt_text += f" {activation_text}"
-        prompt = f"\"{prompt_text}\""
-        onclick = html.escape(f"cardClicked('advanced', {prompt}, '' , false);")
+        # Generate javascript for inserting the LoRA in the prompt.
+        onclick_js = f"cardClicked('lora', \"{prompt_text}\", '' , false);"
+        # Escape quotes but keep < and > intact inside the onclick attribute.
+        onclick = html.escape(onclick_js, quote=True).replace("&lt;", "<").replace("&gt;", ">")
         args = {
             'style': '',
             'card_clicked': onclick,
