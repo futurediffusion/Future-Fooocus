@@ -2,7 +2,7 @@ import os
 from io import BytesIO
 from typing import List
 from PIL import Image
-from modules import config, util
+from modules import lora_manager
 import shared
 import gradio as gr
 import json
@@ -12,90 +12,26 @@ try:
 except Exception:
     st = None
 
-LORA_EXTENSIONS = {'.safetensors', '.ckpt', '.pt'}
+
+get_lora_path = lora_manager.get_lora_path
 
 
-def get_lora_path(name: str) -> str | None:
-    for folder in config.paths_loras:
-        for ext in LORA_EXTENSIONS:
-            path = os.path.join(folder, name + ext)
-            if os.path.exists(path):
-                return path
-    return None
+read_metadata = lora_manager.read_metadata
 
 
-def read_metadata(path):
-    metadata = {}
-    if path.lower().endswith('.safetensors') and st is not None:
-        try:
-            with st.safe_open(path, framework="pt") as f:
-                metadata.update(f.metadata())
-        except Exception:
-            pass
-
-    json_path = os.path.splitext(path)[0] + '.json'
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf8') as j:
-                metadata.update(json.load(j))
-        except Exception:
-            pass
-
-    return metadata
+read_user_metadata = lora_manager.read_user_metadata
 
 
-def read_user_metadata(path: str) -> dict:
-    json_path = os.path.splitext(path)[0] + '.json'
-    if os.path.exists(json_path):
-        try:
-            with open(json_path, 'r', encoding='utf8') as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+write_user_metadata = lora_manager.write_user_metadata
 
 
-def write_user_metadata(path: str, data: dict):
-    json_path = os.path.splitext(path)[0] + '.json'
-    with open(json_path, 'w', encoding='utf8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+list_loras = lora_manager.list_loras
 
 
-def list_loras():
-    files = []
-    for folder in config.paths_loras:
-        if not os.path.isdir(folder):
-            continue
-        for root, _dirs, filenames in os.walk(folder):
-            for name in filenames:
-                ext = os.path.splitext(name)[1].lower()
-                if ext in LORA_EXTENSIONS:
-                    files.append(os.path.join(root, name))
-    return sorted(files)
+find_preview = lora_manager.find_preview
 
 
-def find_preview(path):
-    base, _ = os.path.splitext(path)
-    for ext in ['.png', '.jpg', '.jpeg', '.webp']:
-        cand = base + ext
-        if os.path.exists(cand):
-            return cand
-        cand = base + '.preview' + ext
-        if os.path.exists(cand):
-            return cand
-    return None
-
-
-def build_tags(metadata: dict) -> List[str]:
-    tags = {}
-    freq = metadata.get('ss_tag_frequency', {})
-    if hasattr(freq, 'items'):
-        for _, d in freq.items():
-            for tag, count in d.items():
-                tag = tag.strip()
-                tags[tag] = tags.get(tag, 0) + int(count)
-    ordered = sorted(tags.items(), key=lambda x: x[1], reverse=True)
-    return [t[0] for t in ordered]
+build_tags = lora_manager.build_tags
 
 
 def generate_cards():
