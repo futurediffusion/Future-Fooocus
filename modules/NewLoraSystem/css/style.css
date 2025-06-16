@@ -1088,8 +1088,8 @@ footer {
 
 .extra-network-pane .card .preview{
     width: 160px;
-    height: auto;
-    border-radius: 6px;
+    height: 160px;
+    border-radius: 12px;
     object-fit: cover;
 }
 
