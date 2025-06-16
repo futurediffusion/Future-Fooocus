@@ -2,7 +2,7 @@ import os
 from io import BytesIO
 from typing import List
 from PIL import Image
-from modules import lora_manager
+from modules import lora_utils
 import shared
 import gradio as gr
 import json
@@ -13,25 +13,25 @@ except Exception:
     st = None
 
 
-get_lora_path = lora_manager.get_lora_path
+get_lora_path = lora_utils.get_lora_path
 
 
-read_metadata = lora_manager.read_metadata
+read_metadata = lora_utils.read_metadata
 
 
-read_user_metadata = lora_manager.read_user_metadata
+read_user_metadata = lora_utils.read_user_metadata
 
 
-write_user_metadata = lora_manager.write_user_metadata
+write_user_metadata = lora_utils.write_user_metadata
 
 
-list_loras = lora_manager.list_loras
+list_loras = lora_utils.list_loras
 
 
-find_preview = lora_manager.find_preview
+find_preview = lora_utils.find_preview
 
 
-build_tags = lora_manager.build_tags
+build_tags = lora_utils.build_tags
 
 
 def generate_cards():
