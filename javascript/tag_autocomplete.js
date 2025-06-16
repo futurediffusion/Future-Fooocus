@@ -1,645 +1,381 @@
-// Enhanced tag autocomplete for Stable Diffusion WebUI
-// Improved performance, better UX, and cleaner code architecture
+// Simple tag autocomplete for the positive prompt textarea
+// Loads tags from all csv files in a1111-sd-webui-tagcomplete/tags and shows suggestions while typing
 
-(function() {
-    'use strict';
-
-    // Configuration with better defaults
-    const CONFIG = {
-        tagFiles: ['a1111-sd-webui-tagcomplete/tags/danbooru.csv', 'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'],
-        chantFiles: ['a1111-sd-webui-tagcomplete/tags/demo-chants.json'],
-        maxResults: 8,
-        minQueryLength: 2,
-        enabled: true,
-        appendComma: true,
-        appendSpace: true,
-        replaceUnderscores: false,
-        escapeParentheses: false,
-        debounceMs: 150,
-        fuzzySearch: false,
-        ...window.tac_user_config
-    };
-
-    // State management
-    const state = {
-        tags: new Map(), // Use Map for O(1) lookups
-        chants: [],
-        containers: new Map(),
-        selectedIndex: -1,
-        currentTextarea: null,
-        debounceTimer: null,
-        cache: new Map() // Cache search results
-    };
-
-    // Utility functions
-    const utils = {
-        debounce(func, wait) {
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(state.debounceTimer);
-                    func(...args);
-                };
-                clearTimeout(state.debounceTimer);
-                state.debounceTimer = setTimeout(later, wait);
-            };
-        },
-
-        formatCount(num) {
-            if (!num) return '';
-            return new Intl.NumberFormat('en', {
-                notation: 'compact',
-                maximumFractionDigits: 1
-            }).format(num);
-        },
-
-        parseCSV(line) {
-            const result = [];
-            let current = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < line.length; i++) {
-                const char = line[i];
-                if (char === '"') {
-                    inQuotes = !inQuotes;
-                } else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
-                    current = '';
+(function(){
+    // caret position helper from textarea-caret-position
+    function getCaretCoordinates(element, position){
+        const properties=["direction","boxSizing","width","height","overflowX","overflowY","borderTopWidth","borderRightWidth","borderBottomWidth","borderLeftWidth","borderStyle","paddingTop","paddingRight","paddingBottom","paddingLeft","fontStyle","fontVariant","fontWeight","fontStretch","fontSize","fontSizeAdjust","lineHeight","fontFamily","textAlign","textTransform","textIndent","textDecoration","letterSpacing","wordSpacing","tabSize","MozTabSize"];
+        const div=document.createElement('div');
+        document.body.appendChild(div);
+        const style=div.style;
+        const computed=window.getComputedStyle?window.getComputedStyle(element):element.currentStyle;
+        const isInput=element.nodeName==='INPUT';
+        style.whiteSpace='pre-wrap';
+        if(!isInput) style.wordWrap='break-word';
+        style.position='absolute';
+        style.visibility='hidden';
+        properties.forEach(prop=>{
+            if(isInput && prop==='lineHeight'){
+                if(computed.boxSizing==='border-box'){
+                    const height=parseInt(computed.height);
+                    const outerHeight=parseInt(computed.paddingTop)+parseInt(computed.paddingBottom)+parseInt(computed.borderTopWidth)+parseInt(computed.borderBottomWidth);
+                    const targetHeight=outerHeight+parseInt(computed.lineHeight);
+                    if(height>targetHeight) style.lineHeight=height-outerHeight+'px';
+                    else if(height===targetHeight) style.lineHeight=computed.lineHeight;
+                    else style.lineHeight=0;
                 } else {
-                    current += char;
+                    style.lineHeight=computed.height;
                 }
-            }
-            result.push(current.trim());
-            return result;
-        },
-
-        getCaretPosition(element) {
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            const preCaretRange = range.cloneRange();
-            preCaretRange.selectNodeContents(element);
-            preCaretRange.setEnd(range.endContainer, range.endOffset);
-            return preCaretRange.toString().length;
-        },
-
-        // Improved caret coordinates calculation
-        getCaretCoordinates(element, position) {
-            const properties = [
-                'direction', 'boxSizing', 'width', 'height', 'overflowX', 'overflowY',
-                'borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth',
-                'borderStyle', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-                'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch', 'fontSize',
-                'fontSizeAdjust', 'lineHeight', 'fontFamily', 'textAlign', 'textTransform',
-                'textIndent', 'textDecoration', 'letterSpacing', 'wordSpacing'
-            ];
-
-            const div = document.createElement('div');
-            const span = document.createElement('span');
-            
-            Object.assign(div.style, {
-                whiteSpace: 'pre-wrap',
-                wordWrap: 'break-word',
-                position: 'absolute',
-                visibility: 'hidden',
-                overflow: 'hidden'
-            });
-
-            const computed = getComputedStyle(element);
-            properties.forEach(prop => {
-                div.style[prop] = computed[prop];
-            });
-
-            div.textContent = element.value.substring(0, position);
-            span.textContent = element.value.substring(position) || '.';
-            div.appendChild(span);
-            document.body.appendChild(div);
-
-            const coordinates = {
-                top: span.offsetTop + parseInt(computed.borderTopWidth),
-                left: span.offsetLeft + parseInt(computed.borderLeftWidth),
-                height: parseInt(computed.lineHeight)
-            };
-
-            document.body.removeChild(div);
-            return coordinates;
-        },
-
-        // Fuzzy search implementation
-        fuzzyMatch(query, target) {
-            if (!CONFIG.fuzzySearch) return target.toLowerCase().includes(query.toLowerCase());
-            
-            const queryLower = query.toLowerCase();
-            const targetLower = target.toLowerCase();
-            let queryIndex = 0;
-            
-            for (let i = 0; i < targetLower.length && queryIndex < queryLower.length; i++) {
-                if (targetLower[i] === queryLower[queryIndex]) {
-                    queryIndex++;
-                }
-            }
-            
-            return queryIndex === queryLower.length;
-        }
-    };
-
-    // Data loading with better error handling and caching
-    const dataLoader = {
-        async loadTags() {
-            const loadedTags = new Map();
-            
-            for (const file of CONFIG.tagFiles) {
-                try {
-                    const response = await fetch(`file=${file}`);
-                    if (!response.ok) {
-                        console.warn(`Failed to load tag file: ${file}`);
-                        continue;
-                    }
-                    
-                    const text = await response.text();
-                    const lines = text.split('\n').filter(line => line.trim());
-                    
-                    for (const line of lines) {
-                        const parts = utils.parseCSV(line);
-                        if (parts.length >= 1 && parts[0]) {
-                            const tag = parts[0].trim();
-                            if (!loadedTags.has(tag)) {
-                                const entry = { tag };
-                                
-                                if (parts.length >= 3) {
-                                    const count = parseInt(parts[2]);
-                                    if (!isNaN(count)) {
-                                        entry.count = count;
-                                    } else {
-                                        entry.meta = parts[2];
-                                    }
-                                }
-                                
-                                if (!entry.meta && parts.length >= 2) {
-                                    const maybeCount = parseInt(parts[1]);
-                                    if (isNaN(maybeCount)) {
-                                        entry.meta = parts[1];
-                                    }
-                                }
-                                
-                                loadedTags.set(tag, entry);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error loading tag file ${file}:`, error);
-                }
-            }
-            
-            state.tags = loadedTags;
-            console.log(`Loaded ${loadedTags.size} tags`);
-        },
-
-        async loadChants() {
-            const loadedChants = [];
-            
-            for (const file of CONFIG.chantFiles) {
-                try {
-                    const response = await fetch(`file=${file}`);
-                    if (!response.ok) {
-                        console.warn(`Failed to load chant file: ${file}`);
-                        continue;
-                    }
-                    
-                    const json = await response.json();
-                    if (Array.isArray(json)) {
-                        json.forEach(chant => {
-                            if (chant?.name && chant?.content) {
-                                loadedChants.push(chant);
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Error loading chant file ${file}:`, error);
-                }
-            }
-            
-            state.chants = loadedChants;
-            console.log(`Loaded ${loadedChants.length} chants`);
-        }
-    };
-
-    // UI components
-    const ui = {
-        createContainer() {
-            const container = document.createElement('div');
-            Object.assign(container.style, {
-                position: 'absolute',
-                background: '#1e1e1e',
-                color: '#fff',
-                border: '1px solid #444',
-                borderRadius: '8px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.7)',
-                zIndex: '10000',
-                display: 'none',
-                minWidth: '200px',
-                maxHeight: '300px',
-                overflowY: 'auto',
-                fontSize: '14px',
-                fontFamily: 'monospace'
-            });
-            
-            document.body.appendChild(container);
-            return container;
-        },
-
-        createSuggestionItem(content, isSelected = false, isChant = false) {
-            const div = document.createElement('div');
-            Object.assign(div.style, {
-                padding: '6px 12px',
-                cursor: 'pointer',
-                background: isSelected ? '#333' : '#1e1e1e',
-                borderBottom: '1px solid #333',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                transition: 'background-color 0.15s ease'
-            });
-
-            if (isChant) {
-                div.innerHTML = `<span style="color: #4fc3f7">${content.name}</span>`;
-                div.dataset.chant = content.content;
             } else {
-                const colors = ['#ffa500', '#f48fb1', '#f06292', '#ec407a', '#e91e63'];
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                
-                div.innerHTML = `
-                    <span style="color: ${randomColor}">${content.tag}</span>
-                    <span style="color: #888; font-size: 12px">
-                        ${content.meta || utils.formatCount(content.count)}
-                    </span>
-                `;
-                div.dataset.tag = content.tag;
+                style[prop]=computed[prop];
             }
+        });
+        style.overflow='hidden';
+        div.textContent=element.value.substring(0,position);
+        if(isInput) div.textContent=div.textContent.replace(/\s/g,'\u00a0');
+        const span=document.createElement('span');
+        span.textContent=element.value.substring(position)||'.';
+        div.appendChild(span);
+        const coordinates={
+            top:span.offsetTop+parseInt(computed.borderTopWidth),
+            left:span.offsetLeft+parseInt(computed.borderLeftWidth),
+            height:parseInt(computed.lineHeight)
+        };
+        document.body.removeChild(div);
+        return coordinates;
+    }
+    const TAC_CFG = window.tac_user_config || {};
+    const TAG_FILES = TAC_CFG.tagFile ? [TAC_CFG.tagFile] : ((window.tag_csv_files && Array.isArray(window.tag_csv_files)) ? window.tag_csv_files : [
+        'a1111-sd-webui-tagcomplete/tags/danbooru.csv',
+        'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'
+    ]);
+    const CHANT_FILES = TAC_CFG.chantFile ? [TAC_CFG.chantFile] : ((window.chant_json_files && Array.isArray(window.chant_json_files)) ? window.chant_json_files : [
+        'a1111-sd-webui-tagcomplete/tags/demo-chants.json'
+    ]);
+    const MAX_RESULTS = typeof TAC_CFG.maxResults === 'number' ? TAC_CFG.maxResults : 5;
+    const ENABLED = TAC_CFG.enabled !== undefined ? TAC_CFG.enabled : true;
+    const APPEND_COMMA = TAC_CFG.appendComma !== undefined ? TAC_CFG.appendComma : true;
+    const APPEND_SPACE = TAC_CFG.appendSpace !== undefined ? TAC_CFG.appendSpace : true;
+    const REPLACE_UNDERSCORES = TAC_CFG.replaceUnderscores || false;
+    const ESCAPE_PARENTHESES = TAC_CFG.escapeParentheses || false;
+    let tags = [];
+    let chants = [];
+    let container; // suggestion container
+    let selected = -1;
+    let skipInput = false;
 
-            // Hover effects
-            div.addEventListener('mouseenter', () => {
-                if (!isSelected) div.style.background = '#2a2a2a';
-            });
-            
-            div.addEventListener('mouseleave', () => {
-                if (!isSelected) div.style.background = '#1e1e1e';
-            });
-
-            return div;
-        },
-
-        positionContainer(container, textarea) {
-            const caret = utils.getCaretCoordinates(textarea, textarea.selectionStart);
-            const rect = textarea.getBoundingClientRect();
-            
-            const left = window.scrollX + rect.left + caret.left - textarea.scrollLeft;
-            const top = window.scrollY + rect.top + caret.top - textarea.scrollTop + caret.height;
-            
-            // Ensure container stays within viewport
-            const maxLeft = window.innerWidth - container.offsetWidth - 10;
-            const maxTop = window.innerHeight - container.offsetHeight - 10;
-            
-            container.style.left = Math.min(left, maxLeft) + 'px';
-            container.style.top = Math.min(top, maxTop) + 'px';
+    function parseCSV(line){
+        const result=[];
+        let cur='';
+        let q=false;
+        for(let i=0;i<line.length;i++){
+            const ch=line[i];
+            if(ch==='"'){ q=!q; continue; }
+            if(ch===',' && !q){ result.push(cur); cur=''; }
+            else cur+=ch;
         }
-    };
+        result.push(cur);
+        return result;
+    }
 
-    // Search functionality
-    const search = {
-        isChantFragment(fragment) {
-            const lower = fragment.toLowerCase();
-            return lower.startsWith('<') && 
-                   !lower.startsWith('<e:') && 
-                   !lower.startsWith('<h:') && 
-                   !lower.startsWith('<l:') &&
-                   !fragment.includes(' ');
-        },
+    function formatCount(num){
+        if(!num) return '';
+        return Intl.NumberFormat('en', {notation:'compact', maximumFractionDigits:1}).format(num);
+    }
 
-        searchTags(query) {
-            const cacheKey = `tags_${query}`;
-            if (state.cache.has(cacheKey)) {
-                return state.cache.get(cacheKey);
-            }
-
-            const results = [];
-            const queryLower = query.toLowerCase();
-            
-            for (const [tag, data] of state.tags) {
-                if (utils.fuzzyMatch(query, tag)) {
-                    results.push(data);
-                }
-                if (results.length >= CONFIG.maxResults * 2) break; // Get more for better sorting
-            }
-
-            // Enhanced sorting
-            results.sort((a, b) => {
-                const aStartsWith = a.tag.toLowerCase().startsWith(queryLower);
-                const bStartsWith = b.tag.toLowerCase().startsWith(queryLower);
-                
-                if (aStartsWith && !bStartsWith) return -1;
-                if (!aStartsWith && bStartsWith) return 1;
-                
-                const aQuality = a.meta?.toLowerCase().includes('quality') ?? false;
-                const bQuality = b.meta?.toLowerCase().includes('quality') ?? false;
-                
-                if (aQuality && !bQuality) return -1;
-                if (!aQuality && bQuality) return 1;
-                
-                return (b.count || 0) - (a.count || 0);
-            });
-
-            const limited = results.slice(0, CONFIG.maxResults);
-            state.cache.set(cacheKey, limited);
-            return limited;
-        },
-
-        searchChants(query) {
-            const cacheKey = `chants_${query}`;
-            if (state.cache.has(cacheKey)) {
-                return state.cache.get(cacheKey);
-            }
-
-            const searchTerm = query.toLowerCase()
-                .replace('<chant:', '')
-                .replace('<c:', '')
-                .replace('<', '');
-
-            const results = state.chants.filter(chant => 
-                chant.name?.toLowerCase().includes(searchTerm) ||
-                chant.terms?.toLowerCase().includes(searchTerm)
-            ).slice(0, CONFIG.maxResults);
-
-            state.cache.set(cacheKey, results);
-            return results;
-        }
-    };
-
-    // Suggestion display
-    const suggestions = {
-        show(textarea, fragment) {
-            if (fragment.length < CONFIG.minQueryLength) {
-                this.hide(textarea);
-                return;
-            }
-
-            const container = state.containers.get(textarea);
-            const isChant = search.isChantFragment(fragment);
-            const results = isChant ? search.searchChants(fragment) : search.searchTags(fragment);
-
-            if (results.length === 0) {
-                this.hide(textarea);
-                return;
-            }
-
-            container.innerHTML = '';
-            state.selectedIndex = -1;
-
-            results.forEach((result, index) => {
-                const item = ui.createSuggestionItem(result, false, isChant);
-                
-                item.addEventListener('mousedown', (e) => {
-                    e.preventDefault();
-                    this.insert(textarea, fragment, isChant ? result.content : result.tag, isChant);
-                });
-
-                container.appendChild(item);
-            });
-
-            ui.positionContainer(container, textarea);
-            container.style.display = 'block';
-            state.currentTextarea = textarea;
-        },
-
-        hide(textarea) {
-            const container = state.containers.get(textarea);
-            if (container) {
-                container.style.display = 'none';
-            }
-            state.selectedIndex = -1;
-            state.currentTextarea = null;
-        },
-
-        insert(textarea, fragment, replacement, isChant = false) {
-            const cursorPos = textarea.selectionStart;
-            const before = textarea.value.substring(0, cursorPos);
-            const after = textarea.value.substring(cursorPos);
-            const startPos = before.lastIndexOf(fragment);
-
-            if (startPos === -1) return;
-
-            let insertion = replacement;
-            
-            if (!isChant) {
-                if (CONFIG.replaceUnderscores) {
-                    insertion = insertion.replace(/_/g, ' ');
-                }
-                if (CONFIG.escapeParentheses) {
-                    insertion = insertion.replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-                }
-                if (CONFIG.appendComma) insertion += ',';
-            }
-            
-            if (CONFIG.appendSpace) insertion += ' ';
-
-            textarea.value = before.substring(0, startPos) + insertion + after;
-            textarea.selectionStart = textarea.selectionEnd = startPos + insertion.length;
-            
-            this.hide(textarea);
-            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-        },
-
-        updateSelection(direction) {
-            if (!state.currentTextarea) return;
-            
-            const container = state.containers.get(state.currentTextarea);
-            const items = container.children;
-            
-            if (items.length === 0) return;
-
-            // Clear previous selection
-            if (state.selectedIndex >= 0) {
-                items[state.selectedIndex].style.background = '#1e1e1e';
-            }
-
-            // Update selection
-            if (direction === 'down') {
-                state.selectedIndex = (state.selectedIndex + 1) % items.length;
-            } else if (direction === 'up') {
-                state.selectedIndex = state.selectedIndex <= 0 ? items.length - 1 : state.selectedIndex - 1;
-            }
-
-            // Highlight new selection
-            items[state.selectedIndex].style.background = '#333';
-            items[state.selectedIndex].scrollIntoView({ block: 'nearest' });
-        }
-    };
-
-    // Event handlers
-    const handlers = {
-        debouncedShowSuggestions: utils.debounce((textarea) => {
-            const cursorPos = textarea.selectionStart;
-            const text = textarea.value.substring(0, cursorPos);
-            const fragment = text.split(/[,\n]/).pop().trim();
-            
-            if (fragment.length === 0) {
-                suggestions.hide(textarea);
-                return;
-            }
-            
-            suggestions.show(textarea, fragment);
-        }, CONFIG.debounceMs),
-
-        onInput(textarea) {
-            return () => {
-                this.debouncedShowSuggestions(textarea);
-            };
-        },
-
-        onKeyDown(textarea) {
-            return (e) => {
-                const container = state.containers.get(textarea);
-                if (!container || container.style.display === 'none') return;
-
-                const items = container.children;
-                let handled = false;
-
-                switch (e.key) {
-                    case 'ArrowDown':
-                        suggestions.updateSelection('down');
-                        handled = true;
-                        break;
-                    case 'ArrowUp':
-                        suggestions.updateSelection('up');
-                        handled = true;
-                        break;
-                    case 'Enter':
-                    case 'Tab':
-                        if (state.selectedIndex >= 0 && items[state.selectedIndex]) {
-                            const item = items[state.selectedIndex];
-                            const fragment = textarea.value.substring(0, textarea.selectionStart)
-                                .split(/[,\n]/).pop().trim();
-                            
-                            if (item.dataset.chant) {
-                                suggestions.insert(textarea, fragment, item.dataset.chant, true);
-                            } else if (item.dataset.tag) {
-                                suggestions.insert(textarea, fragment, item.dataset.tag, false);
-                            }
+    async function loadTags(){
+        const loaded = [];
+        try {
+            for(const file of TAG_FILES){
+                const resp = await fetch('file=' + file);
+                if(!resp.ok) continue;
+                const text = await resp.text();
+                text.split(/\n/).forEach(line=>{
+                    line=line.trim();
+                    if(!line) return;
+                    const p=parseCSV(line);
+                    if(p.length>=1){
+                        const entry = {tag:p[0]};
+                        if(p.length>=3){
+                            const c=parseInt(p[2]);
+                            if(!isNaN(c)) entry.count = c;
+                            else entry.meta = p[2];
                         }
-                        handled = true;
-                        break;
-                    case 'Escape':
-                        suggestions.hide(textarea);
-                        handled = true;
-                        break;
-                }
-
-                if (handled) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-            };
-        },
-
-        onBlur(textarea) {
-            return () => {
-                // Hide suggestions after a short delay to allow clicks
-                setTimeout(() => suggestions.hide(textarea), 150);
-            };
-        }
-    };
-
-    // Main attachment function
-    function attachToTextarea(textarea) {
-        if (state.containers.has(textarea)) return; // Already attached
-
-        const container = ui.createContainer();
-        state.containers.set(textarea, container);
-
-        textarea.addEventListener('input', handlers.onInput(textarea));
-        textarea.addEventListener('keydown', handlers.onKeyDown(textarea));
-        textarea.addEventListener('blur', handlers.onBlur(textarea));
-
-        // Cleanup on textarea removal
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                mutation.removedNodes.forEach((node) => {
-                    if (node === textarea) {
-                        if (container.parentNode) {
-                            container.parentNode.removeChild(container);
+                        if(!entry.meta && p.length>=2){
+                            const m = parseInt(p[1]);
+                            if(isNaN(m)) entry.meta = p[1];
                         }
-                        state.containers.delete(textarea);
-                        observer.disconnect();
+                        loaded.push(entry);
                     }
                 });
-            });
-        });
-
-        observer.observe(document.body, { childList: true, subtree: true });
+            }
+            const seen=new Set();
+            loaded.forEach(t=>{ if(!seen.has(t.tag)){ tags.push(t); seen.add(t.tag);} });
+        } catch(err){
+            console.error('Failed to load tags', err);
+        }
     }
 
-    // Initialization
-    async function initialize() {
-        if (!CONFIG.enabled) return;
-
+    async function loadChants(){
+        const loaded = [];
         try {
-            console.log('Loading tag autocomplete data...');
-            await Promise.all([
-                dataLoader.loadTags(),
-                dataLoader.loadChants()
-            ]);
-
-            // Attach to existing textareas
-            const selectors = [
-                '#positive_prompt textarea',
-                '#negative_prompt textarea',
-                'textarea[placeholder*="prompt"]'
-            ];
-
-            selectors.forEach(selector => {
-                document.querySelectorAll(selector).forEach(attachToTextarea);
-            });
-
-            // Watch for dynamically added textareas
-            const observer = new MutationObserver((mutations) => {
-                mutations.forEach((mutation) => {
-                    mutation.addedNodes.forEach((node) => {
-                        if (node.nodeType === Node.ELEMENT_NODE) {
-                            selectors.forEach(selector => {
-                                if (node.matches && node.matches(selector)) {
-                                    attachToTextarea(node);
-                                } else {
-                                    node.querySelectorAll?.(selector).forEach(attachToTextarea);
-                                }
-                            });
-                        }
-                    });
+            for(const file of CHANT_FILES){
+                const resp = await fetch('file=' + file);
+                if(!resp.ok) continue;
+                const json = await resp.json();
+                json.forEach(c => {
+                    if(c && c.name && c.content){
+                        loaded.push(c);
+                    }
                 });
+            }
+            chants = loaded;
+        } catch(err){
+            console.error('Failed to load chants', err);
+        }
+    }
+
+    function createContainer(area){
+        container = document.createElement('div');
+        container.style.position = 'absolute';
+        container.style.background = '#1e1e1e';
+        container.style.color = '#fff';
+        container.style.border = '1px solid #444';
+        container.style.zIndex = 10000;
+        container.style.display = 'none';
+        container.style.maxHeight = 'none';
+        container.style.overflowY = 'hidden';
+        container.style.borderRadius = '8px';
+        container.style.boxShadow = '0 2px 5px rgba(0,0,0,0.6)';
+        container.style.minWidth = '150px';
+        document.body.appendChild(container);
+    }
+
+    function isChantFragment(fragment){
+        const lower = fragment.toLowerCase();
+        if(!lower.startsWith('<')) return false;
+        if(lower.startsWith('<e:') || lower.startsWith('<h:') || lower.startsWith('<l:')) return false;
+        return !fragment.includes(' ');
+    }
+
+    function showTagSuggestions(area, fragment){
+        const lower = fragment.toLowerCase();
+        const results = tags.filter(t => t.tag.startsWith(lower));
+        if(results.length === 0){
+            container.style.display = 'none';
+            return;
+        }
+        results.sort((a, b) => {
+            const aq = a.meta && a.meta.toLowerCase().includes('quality');
+            const bq = b.meta && b.meta.toLowerCase().includes('quality');
+            if (aq && !bq) return -1;
+            if (!aq && bq) return 1;
+            const ac = a.count || 0;
+            const bc = b.count || 0;
+            return bc - ac;
+        });
+        const limited = results.slice(0, MAX_RESULTS);
+        container.innerHTML = '';
+        const colors = ['#ffa500','#f48fb1','#f06292','#ec407a','#e91e63'];
+        limited.forEach((t,i)=>{
+            const div = document.createElement('div');
+            const pre = t.tag.substring(0, fragment.length);
+            const post = t.tag.substring(fragment.length);
+            const color = colors[(i+1)%colors.length];
+            div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><span><span style="color:${colors[0]}">${pre}</span><span style="color:${color}">${post}</span></span><span style="color:#888;margin-left:10px">${t.meta ? t.meta : formatCount(t.count)}</span></div>`;
+            div.style.padding = '4px 8px';
+            div.style.cursor = 'pointer';
+            div.dataset.tag = t.tag;
+            if(i===selected){
+                div.style.background = '#333';
+            } else {
+                div.style.background = '#1e1e1e';
+            }
+            div.addEventListener('mousedown', (e)=>{
+                e.preventDefault();
+                insert(area, fragment, t.tag);
             });
-
-            observer.observe(document.body, { childList: true, subtree: true });
-            
-            console.log('Tag autocomplete initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize tag autocomplete:', error);
-        }
+            container.appendChild(div);
+        });
+        const caret = getCaretCoordinates(area, area.selectionStart);
+        const rect = area.getBoundingClientRect();
+        container.style.left = (window.scrollX + rect.left + caret.left - area.scrollLeft) + 'px';
+        container.style.top = (window.scrollY + rect.top + caret.top - area.scrollTop + caret.height) + 'px';
+        container.style.width = 'auto';
+        container.style.display = 'block';
+        selected = -1;
     }
 
-    // Start initialization
-    if (typeof onUiLoaded === 'function') {
-        onUiLoaded(initialize);
-    } else {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initialize);
+    function showChantSuggestions(area, fragment){
+        const search = fragment.toLowerCase().replace('<chant:', '').replace('<c:', '').replace('<','');
+        const results = chants.filter(c =>
+            (c.name && c.name.toLowerCase().includes(search)) ||
+            (c.terms && c.terms.toLowerCase().includes(search))
+        );
+        if(results.length === 0){
+            container.style.display = 'none';
+            return;
+        }
+        const limited = results.slice(0, MAX_RESULTS);
+        container.innerHTML = '';
+        const colors = ['#ffa500','#f48fb1','#f06292','#ec407a','#e91e63'];
+        limited.forEach((t,i)=>{
+            const div = document.createElement('div');
+            const color = colors[t.color%colors.length];
+            div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:${color}">${t.name}</span></div>`;
+            div.style.padding = '4px 8px';
+            div.style.cursor = 'pointer';
+            div.dataset.chant = t.content;
+            if(i===selected){
+                div.style.background = '#333';
+            } else {
+                div.style.background = '#1e1e1e';
+            }
+            div.addEventListener('mousedown', (e)=>{
+                e.preventDefault();
+                insertChant(area, fragment, t.content);
+            });
+            container.appendChild(div);
+        });
+        const caret = getCaretCoordinates(area, area.selectionStart);
+        const rect = area.getBoundingClientRect();
+        container.style.left = (window.scrollX + rect.left + caret.left - area.scrollLeft) + 'px';
+        container.style.top = (window.scrollY + rect.top + caret.top - area.scrollTop + caret.height) + 'px';
+        container.style.width = 'auto';
+        container.style.display = 'block';
+        selected = -1;
+    }
+
+    function showSuggestions(area){
+        const cursorPos = area.selectionStart;
+        const text = area.value.substring(0, cursorPos);
+        const fragment = text.split(/[,\n]/).pop().trim();
+        if(fragment.length === 0){
+            container.style.display = 'none';
+            return;
+        }
+        if(isChantFragment(fragment)) {
+            showChantSuggestions(area, fragment);
         } else {
-            initialize();
+            showTagSuggestions(area, fragment);
         }
     }
 
-    // Expose API for external configuration
-    window.tagAutocomplete = {
-        config: CONFIG,
-        state: state,
-        reload: initialize,
-        clearCache: () => state.cache.clear()
-    };
+    function insert(area, fragment, tag){
+        const cursorPos = area.selectionStart;
+        const before = area.value.substring(0, cursorPos);
+        const after = area.value.substring(cursorPos);
+        const start = before.lastIndexOf(fragment);
+        if(REPLACE_UNDERSCORES) tag = tag.replace(/_/g, ' ');
+        if(ESCAPE_PARENTHESES) tag = tag.replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+        let insertion = tag;
+        if(APPEND_COMMA) insertion += ',';
+        if(APPEND_SPACE) insertion += ' ';
+        area.value = before.substring(0, start) + insertion + after;
+        area.selectionStart = area.selectionEnd = start + insertion.length;
+        container.style.display = 'none';
+        skipInput = true;
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 
+    function insertChant(area, fragment, content){
+        const cursorPos = area.selectionStart;
+        const before = area.value.substring(0, cursorPos);
+        const after = area.value.substring(cursorPos);
+        const start = before.lastIndexOf(fragment);
+        let insertion = content;
+        if(APPEND_SPACE) insertion += ' ';
+        area.value = before.substring(0, start) + insertion + after;
+        area.selectionStart = area.selectionEnd = start + insertion.length;
+        container.style.display = 'none';
+        skipInput = true;
+        area.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+
+    function attach(area){
+        createContainer(area);
+        area.addEventListener('input', ()=>{
+            if(skipInput){ skipInput=false; return; }
+            showSuggestions(area);
+        });
+        area.addEventListener('keydown', (e)=>{
+            if(container.style.display==='none') return;
+            const items = container.children;
+            let handled = false;
+
+            if(e.key==='ArrowDown'){
+                selected = (selected+1)%items.length;
+                handled = true;
+            } else if(e.key==='ArrowUp'){
+                selected = (selected-1+items.length)%items.length;
+                handled = true;
+            } else if(e.key==='PageDown'){
+                handled = true;
+                if(selected===-1 || selected===items.length-1) selected = 0;
+                else selected = Math.min(selected+5, items.length-1);
+            } else if(e.key==='PageUp'){
+                handled = true;
+                if(selected===-1 || selected===0) selected = items.length-1;
+                else selected = Math.max(selected-5, 0);
+            } else if(e.key==='End'){
+                selected = items.length-1;
+                handled = true;
+            } else if(e.key==='Home'){
+                selected = 0;
+                handled = true;
+            } else if(e.key==='Enter'){
+                handled = true;
+                const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
+                if(selected>=0){
+                    if(items[selected].dataset.chant)
+                        insertChant(area, fragment, items[selected].dataset.chant);
+                    else
+                        insert(area, fragment, items[selected].dataset.tag);
+                } else {
+                    container.style.display='none';
+                }
+            } else if(e.key==='Tab'){
+                handled = true;
+                const fragment = area.value.substring(0, area.selectionStart).split(/[,\n]/).pop().trim();
+                const idx = selected>=0 ? selected : 0;
+                if(items.length>0){
+                    if(items[idx].dataset.chant)
+                        insertChant(area, fragment, items[idx].dataset.chant);
+                    else
+                        insert(area, fragment, items[idx].dataset.tag);
+                }
+            } else if(e.key==='Escape'){
+                container.style.display='none';
+                handled = true;
+            }
+
+            if(handled){
+                e.preventDefault();
+                updateHighlight(items);
+            }
+        });
+    }
+
+    function updateHighlight(items){
+        for(let i=0;i<items.length;i++){
+            items[i].style.background = (i===selected)?'#333':'#1e1e1e';
+        }
+    }
+
+    function init(){
+        if(!ENABLED) return;
+        const positiveArea = document.querySelector('#positive_prompt textarea');
+        const negativeArea = document.querySelector('#negative_prompt textarea');
+        if(!positiveArea && !negativeArea) return;
+        Promise.all([loadTags(), loadChants()]).then(()=>{
+            if(positiveArea) attach(positiveArea);
+            if(negativeArea) attach(negativeArea);
+        });
+    }
+
+    if(window.onUiLoaded){
+        onUiLoaded(init);
+    }else{
+        window.addEventListener('load', init);
+    }
 })();
