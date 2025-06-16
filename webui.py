@@ -24,6 +24,7 @@ from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 from modules import simple_lora_ui
+from fastapi.responses import JSONResponse
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
@@ -155,6 +156,15 @@ if isinstance(args_manager.args.preset, str):
     title += ' ' + args_manager.args.preset
 
 shared.gradio_root = gr.Blocks(title=title).queue()
+
+
+def lora_metadata_api(page: str = "", item: str = ""):
+    meta = simple_lora_ui.get_metadata(item)
+    if not meta:
+        return JSONResponse({})
+    return JSONResponse({"metadata": json.dumps(meta, indent=4, ensure_ascii=False)})
+
+shared.gradio_root.app.add_api_route("/sd_extra_networks/metadata", lora_metadata_api, methods=["GET"])
 
 with shared.gradio_root:
     currentTask = gr.State(worker.AsyncTask(args=[]))
