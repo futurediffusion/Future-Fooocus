@@ -66,10 +66,11 @@ def list_loras():
     for folder in config.paths_loras:
         if not os.path.isdir(folder):
             continue
-        for name in os.listdir(folder):
-            ext = os.path.splitext(name)[1].lower()
-            if ext in LORA_EXTENSIONS:
-                files.append(os.path.join(folder, name))
+        for root, _dirs, filenames in os.walk(folder):
+            for name in filenames:
+                ext = os.path.splitext(name)[1].lower()
+                if ext in LORA_EXTENSIONS:
+                    files.append(os.path.join(root, name))
     return sorted(files)
 
 
