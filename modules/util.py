@@ -31,6 +31,51 @@ LORAS_PROMPT_PATTERN = re.compile(r"(<lora:([^:]+):([+-]?(?:\d+(?:\.\d*)?|\.\d+)
 HASH_SHA256_LENGTH = 10
 
 
+class MassFileLister:
+    """Simple filesystem cache for modification times used by extra networks."""
+
+    def __init__(self):
+        self._cache = {}
+
+    def mctime(self, path: str):
+        """Return modification and creation times for a path."""
+        try:
+            stat = os.stat(path)
+            mtime, ctime = int(stat.st_mtime), int(stat.st_ctime)
+            self._cache[path] = (mtime, ctime, True)
+            return mtime, ctime
+        except OSError:
+            self._cache[path] = (0, 0, False)
+            return 0, 0
+
+    def exists(self, path: str) -> bool:
+        if path in self._cache:
+            cached = self._cache[path]
+            if cached[2]:
+                if os.path.exists(path):
+                    return True
+                self._cache[path] = (0, 0, False)
+                return False
+            return False
+        exists = os.path.exists(path)
+        if exists:
+            stat = os.stat(path)
+            self._cache[path] = (int(stat.st_mtime), int(stat.st_ctime), True)
+        else:
+            self._cache[path] = (0, 0, False)
+        return exists
+
+    def reset(self):
+        self._cache.clear()
+
+    def update_file_entry(self, path: str):
+        self._cache.pop(path, None)
+        if os.path.exists(path):
+            stat = os.stat(path)
+            self._cache[path] = (int(stat.st_mtime), int(stat.st_ctime), True)
+
+
+
 def clear_wildcard_cache():
     """Clears the cached wildcard file contents."""
     _wildcard_cache.clear()

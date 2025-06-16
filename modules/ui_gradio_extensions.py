@@ -34,6 +34,7 @@ def javascript_html():
     image_viewer_js_path = webpath('javascript/imageviewer.js')
     zoom_image_js_path = webpath('javascript/zoomimage.js')
     tag_autocomplete_js_path = webpath('javascript/tag_autocomplete.js')
+    extra_networks_js_path = webpath('modules/NewLoraSystem/javascrypt/extraNetworks.js')
     tag_dir = os.path.join(script_path, 'a1111-sd-webui-tagcomplete', 'tags')
     tag_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('.csv')]
     chant_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
@@ -60,6 +61,7 @@ def javascript_html():
     head += f'<script type="text/javascript" src="{image_viewer_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{zoom_image_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{tag_autocomplete_js_path}"></script>\n'
+    head += f'<script type="text/javascript" src="{extra_networks_js_path}"></script>\n'
     head += f'<script type="text/javascript">window.tag_csv_files = {tag_files_json};</script>\n'
     head += f'<script type="text/javascript">window.chant_json_files = {chant_files_json};</script>\n'
     head += f'<script type="text/javascript">window.tac_user_config = {tac_cfg};</script>\n'
@@ -73,7 +75,9 @@ def javascript_html():
 
 def css_html():
     style_css_path = webpath('css/style.css')
-    head = f'<link rel="stylesheet" property="stylesheet" href="{style_css_path}">'
+    extra_css_path = webpath('modules/NewLoraSystem/css/style.css')
+    head = f'<link rel="stylesheet" property="stylesheet" href="{style_css_path}">' \
+           f'\n<link rel="stylesheet" property="stylesheet" href="{extra_css_path}">' 
     return head
 
 
