@@ -2,7 +2,8 @@ import os
 from io import BytesIO
 from typing import List
 from PIL import Image
-from modules import config, util, shared
+from modules import config, util
+import shared
 import gradio as gr
 import json
 import html
