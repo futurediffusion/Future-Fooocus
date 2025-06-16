@@ -490,3 +490,7 @@ div:has(> #positive_prompt) {
   cursor: pointer;
   box-sizing: border-box;
 }
+
+#lightboxModal img.zoomable{cursor: grab;transition: transform 0.05s ease-out;}
+#lightboxModal img.zoomable:active{cursor: grabbing;}
+

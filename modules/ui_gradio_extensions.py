@@ -32,6 +32,7 @@ def javascript_html():
     edit_attention_js_path = webpath('javascript/edit-attention.js')
     viewer_js_path = webpath('javascript/viewer.js')
     image_viewer_js_path = webpath('javascript/imageviewer.js')
+    zoom_image_js_path = webpath('javascript/zoomimage.js')
     tag_autocomplete_js_path = webpath('javascript/tag_autocomplete.js')
     tag_dir = os.path.join(script_path, 'a1111-sd-webui-tagcomplete', 'tags')
     tag_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('.csv')]
@@ -57,6 +58,7 @@ def javascript_html():
     head += f'<script type="text/javascript" src="{edit_attention_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{viewer_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{image_viewer_js_path}"></script>\n'
+    head += f'<script type="text/javascript" src="{zoom_image_js_path}"></script>\n'
     head += f'<script type="text/javascript" src="{tag_autocomplete_js_path}"></script>\n'
     head += f'<script type="text/javascript">window.tag_csv_files = {tag_files_json};</script>\n'
     head += f'<script type="text/javascript">window.chant_json_files = {chant_files_json};</script>\n'
