@@ -32,20 +32,6 @@ class AsyncTask:
         self.generate_image_grid = args.pop()
         self.prompt = args.pop()
         self.negative_prompt = args.pop()
-
-        # Ensure prompt fields are strings to avoid attribute errors when
-        # processing unexpected types.
-        if not isinstance(self.prompt, str):
-            if isinstance(self.prompt, list):
-                self.prompt = ", ".join(map(str, self.prompt))
-            else:
-                self.prompt = str(self.prompt)
-
-        if not isinstance(self.negative_prompt, str):
-            if isinstance(self.negative_prompt, list):
-                self.negative_prompt = ", ".join(map(str, self.negative_prompt))
-            else:
-                self.negative_prompt = str(self.negative_prompt)
         self.style_selections = args.pop()
         self.csv_styles = args.pop()
         if self.csv_styles is None:
