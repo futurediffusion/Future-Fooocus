@@ -30,12 +30,13 @@ def reload_upscalers() -> List[str]:
     return DEFAULT_UPSCALERS
 
 
-def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -> Image.Image:
+def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float, image_seed: int | None = None) -> Image.Image:
     """Apply Fooocus diffusion on a single tile using ``prompt`` and
     ``denoising_strength``. This mirrors the behaviour of features such as
     ``Vary`` and ``Upscale" in the official pipeline."""
 
     import numpy as np
+    import random
 
     # Encode prompt and default negative prompt using Fooocus CLIP pipeline
     positive_cond = pipeline.clip_encode(texts=[prompt], pool_top_k=1)
@@ -51,6 +52,9 @@ def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -
     _, _, h, w = latent["samples"].shape
 
     # Run diffusion on the tile latent
+    if image_seed is None:
+        image_seed = random.randint(0, 2**32 - 1)
+
     images = pipeline.process_diffusion(
         positive_cond=positive_cond,
         negative_cond=negative_cond,
@@ -58,7 +62,7 @@ def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -
         switch=0,
         width=w * 8,
         height=h * 8,
-        image_seed=0,
+        image_seed=image_seed,
         callback=None,
         sampler_name=config.default_sampler,
         scheduler_name=config.default_scheduler,
@@ -121,6 +125,7 @@ def upscale_image(
         progress_callback=None,
         prompt: str = "",
         denoising_strength: float = 0.0,
+        seed: int | None = None,
 ) -> Image.Image:
     """Upscale ``image`` by ``scale_factor`` while processing tiles individually.
 
@@ -151,6 +156,8 @@ def upscale_image(
         Prompt used for denoising each tile when ``denoising_strength > 0``.
     denoising_strength : float, optional
         Strength of the img2img denoising applied to each tile.
+    seed : int, optional
+        Seed used for the denoising diffusion. If ``None`` a random seed is used.
     """
 
     import numpy as np
@@ -197,7 +204,7 @@ def upscale_image(
         for (row_idx, col_idx, dx, dy, d_tw, d_th), out_np in zip(batch_info, results):
             tile_img = Image.fromarray(out_np)
             if denoising_strength > 0:
-                tile_img = apply_denoising(tile_img, prompt, denoising_strength)
+                tile_img = apply_denoising(tile_img, prompt, denoising_strength, image_seed=seed)
             tile_np = np.array(tile_img)
             tile_np = resample_image(tile_np, width=d_tw, height=d_th)
             tile_img = Image.fromarray(tile_np)
