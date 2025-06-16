@@ -611,6 +611,12 @@ function extraNetworksCopyCardPath(event) {
 }
 
 function extraNetworksRequestMetadata(event, extraPage) {
+    var inlineData = event.target.dataset.metadata;
+    if (inlineData) {
+        extraNetworksShowMetadata(inlineData);
+        event.stopPropagation();
+        return;
+    }
     var showError = function() {
         extraNetworksShowMetadata("there was an error getting metadata");
     };
