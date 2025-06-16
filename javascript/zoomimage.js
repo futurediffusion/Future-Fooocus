@@ -6,6 +6,7 @@ onUiLoaded(() => {
     }
 
     img.classList.add('zoomable');
+    img.style.transformOrigin = '0 0';
     img.draggable = false;
     img.addEventListener('dragstart', (e) => e.preventDefault());
 
@@ -31,13 +32,14 @@ onUiLoaded(() => {
     img.addEventListener('wheel', (e) => {
         e.preventDefault();
         const rect = img.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
+        const imgX = (e.clientX - rect.left - panX) / scale;
+        const imgY = (e.clientY - rect.top - panY) / scale;
         const prevScale = scale;
         const delta = e.deltaY > 0 ? -0.1 : 0.1;
-        scale = Math.min(5, Math.max(0.2, scale + delta));
-        panX += offsetX - offsetX * (scale / prevScale);
-        panY += offsetY - offsetY * (scale / prevScale);
+        const newScale = Math.min(5, Math.max(0.2, scale + delta));
+        panX -= imgX * (newScale - prevScale);
+        panY -= imgY * (newScale - prevScale);
+        scale = newScale;
         applyTransform();
     });
 
