@@ -2,6 +2,9 @@ import math
 from dataclasses import dataclass
 from typing import List
 
+from modules import default_pipeline as pipeline
+from modules import core, config
+
 from PIL import Image
 from ldm_patched.utils import path_utils
 
@@ -23,6 +26,49 @@ def reload_upscalers() -> List[str]:
     global DEFAULT_UPSCALERS
     DEFAULT_UPSCALERS = _find_upscalers()
     return DEFAULT_UPSCALERS
+
+
+def apply_denoising(tile: Image.Image, prompt: str, denoising_strength: float) -> Image.Image:
+    """Apply Fooocus diffusion on a single tile using ``prompt`` and
+    ``denoising_strength``. This mirrors the behaviour of features such as
+    ``Vary`` and ``Upscale" in the official pipeline."""
+
+    import numpy as np
+
+    # Encode prompt and default negative prompt using Fooocus CLIP pipeline
+    positive_cond = pipeline.clip_encode(texts=[prompt], pool_top_k=1)
+    negative_prompt = config.default_prompt_negative or ""
+    negative_cond = pipeline.clip_encode(texts=[negative_prompt], pool_top_k=1)
+
+    # Prepare latent from image using the currently loaded VAE
+    candidate_vae, _ = pipeline.get_candidate_vae(
+        steps=20, switch=0, denoise=denoising_strength, refiner_swap_method="joint"
+    )
+    tile_tensor = core.numpy_to_pytorch(np.array(tile))
+    latent = core.encode_vae(vae=candidate_vae, pixels=tile_tensor, tiled=False)
+    _, _, h, w = latent["samples"].shape
+
+    # Run diffusion on the tile latent
+    images = pipeline.process_diffusion(
+        positive_cond=positive_cond,
+        negative_cond=negative_cond,
+        steps=20,
+        switch=0,
+        width=w * 8,
+        height=h * 8,
+        image_seed=0,
+        callback=None,
+        sampler_name=config.default_sampler,
+        scheduler_name=config.default_scheduler,
+        latent=latent,
+        denoise=denoising_strength,
+        tiled=False,
+        cfg_scale=config.default_cfg_scale,
+        refiner_swap_method="joint",
+        disable_preview=True,
+    )
+
+    return Image.fromarray(images[0])
 
 
 @dataclass
@@ -70,6 +116,8 @@ def upscale_image(
         tile_size: int = 512,
         upscaler_name: str = "None",
         progress_callback=None,
+        prompt: str = "",
+        denoising_strength: float = 0.0,
 ) -> Image.Image:
     """Upscale ``image`` by ``scale_factor`` while processing tiles individually.
 
@@ -94,6 +142,10 @@ def upscale_image(
     progress_callback : callable, optional
         Called after each tile is processed with ``(done_tiles, total_tiles,
         preview_image)``.
+    prompt : str, optional
+        Prompt used for denoising each tile when ``denoising_strength > 0``.
+    denoising_strength : float, optional
+        Strength of the img2img denoising applied to each tile.
     """
 
     import numpy as np
@@ -118,11 +170,23 @@ def upscale_image(
 
     for row_index, (y, th, row) in enumerate(grid.tiles):
         for col_index, (x, tw, tile) in enumerate(row):
-            tile_np = np.array(tile)
+            processed_tile = tile
+
+            # 1. Optional ESRGAN upscale on the raw tile
             if upscaler_name != "None":
-                tile_np = perform_upscale(tile_np)
+                tile_np = perform_upscale(np.array(processed_tile))
+                processed_tile = Image.fromarray(tile_np)
+
+            # 2. Apply denoising using the Fooocus pipeline
+            if denoising_strength > 0:
+                processed_tile = apply_denoising(processed_tile, prompt, denoising_strength)
+
+            # 3. Resize back to the expected tile size
+            tile_np = np.array(processed_tile)
             tile_np = resample_image(tile_np, width=tw, height=th)
             processed_tile = Image.fromarray(tile_np)
+
+            # 4. Paste into the final combined image
             combined_image.paste(processed_tile.crop((0, 0, tw, th)), (x, y))
             done_tiles += 1
             if progress_callback is not None:
