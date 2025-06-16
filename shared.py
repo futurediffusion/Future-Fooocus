@@ -9,6 +9,7 @@ _MODULE_DIR = os.path.dirname(os.path.abspath(__file__))
 def html(name: str) -> str:
     """Return contents of an HTML template bundled with the repo."""
     paths = [
+        os.path.join(_MODULE_DIR, "modules", "NewLoraSystem", "html", name),
         os.path.join(_MODULE_DIR, "NewLoraSystem", "html", name),
         os.path.join(_MODULE_DIR, "html", name),
     ]
