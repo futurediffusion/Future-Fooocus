@@ -222,9 +222,10 @@ function htmlDecode(input) {
   return doc.documentElement.textContent;
 }
 
-function openLoraEditor(event, tabname) {
-    var card = event.target.closest('.card');
+function openLoraEditor(el) {
+    var card = el.closest('.card');
     if (!card) return;
+    var tabname = el.dataset.tabname || 'lora';
     var name = card.dataset.name;
     var textbox = gradioApp().querySelector(`#${tabname}_lora_edit_user_metadata_name textarea`);
     var button = gradioApp().getElementById(`${tabname}_lora_edit_user_metadata_button`);
@@ -234,7 +235,14 @@ function openLoraEditor(event, tabname) {
         button.click();
         popupId(`${tabname}_lora_edit_user_metadata`);
     }
-    event.stopPropagation();
+    if (typeof event !== 'undefined') event.stopPropagation();
+}
+
+function copyCardPath(el) {
+    var card = el.closest('.card');
+    if (!card) return;
+    navigator.clipboard.writeText(card.dataset.file);
+    if (typeof event !== 'undefined') event.stopPropagation();
 }
 
 function refreshLoraCards() {
