@@ -1,8 +1,10 @@
-<div class="card" style="{style}" onclick="{card_clicked}" data-name="{name}" data-file="{filename}" {sort_keys}>
-	{background_image}
+<div class="card" style="{style}" onclick="{card_clicked}" data-name="{name}" data-file="{filename}" {sort_keys}
+     onmouseover="this.querySelector('.card-buttons').style.display='block'"
+     onmouseout="this.querySelector('.card-buttons').style.display='none'">
+        {background_image}
         <div class="card-buttons">{copy_path_button}{metadata_button}{edit_button}</div>
-	<div class="actions">
-		<div class="additional">{search_terms}</div>
+        <div class="actions">
+                <div class="additional">{search_terms}</div>
 		<span class="name">{name}</span>
 		<span class="description">{description}</span>
 	</div>
