@@ -15,6 +15,8 @@ function toggleCss(key, css, enable) {
     }
 }
 
+const EXTRA_NETWORK_SEPARATOR = window.extra_networks_add_text_separator || ' ';
+
 function setupExtraNetworksForTab(tabname) {
     function registerPrompt(tabname, id) {
         var textarea = gradioApp().querySelector("#" + id + " > label > textarea");
@@ -29,12 +31,20 @@ function setupExtraNetworksForTab(tabname) {
     }
 
     var tabnav = gradioApp().querySelector('#' + tabname + '_extra_tabs > div.tab-nav');
+    if (!tabnav) {
+        console.warn('extra networks: tabnav not found for', tabname);
+        return;
+    }
     var controlsDiv = document.createElement('DIV');
     controlsDiv.classList.add('extra-networks-controls-div');
     tabnav.appendChild(controlsDiv);
     tabnav.insertBefore(controlsDiv, null);
 
     var this_tab = gradioApp().querySelector('#' + tabname + '_extra_tabs');
+    if (!this_tab) {
+        console.warn('extra networks: tab not found for', tabname);
+        return;
+    }
     this_tab.querySelectorAll(":scope > [id^='" + tabname + "_']").forEach(function(elem) {
         // tabname_full = {tabname}_{extra_networks_tabname}
         var tabname_full = elem.id;
@@ -210,7 +220,7 @@ function tryToRemoveExtraNetworkFromPrompt(textarea, text, isNeg) {
     var m = text.match(isNeg ? re_extranet_neg : re_extranet);
     var replaced = false;
     var newTextareaText;
-    var extraTextBeforeNet = opts.extra_networks_add_text_separator;
+    var extraTextBeforeNet = EXTRA_NETWORK_SEPARATOR;
     if (m) {
         var extraTextAfterNet = m[2];
         var partToSearch = m[1];
@@ -247,7 +257,7 @@ function tryToRemoveExtraNetworkFromPrompt(textarea, text, isNeg) {
 
 function updatePromptArea(text, textArea, isNeg) {
     if (!tryToRemoveExtraNetworkFromPrompt(textArea, text, isNeg)) {
-        textArea.value = textArea.value + opts.extra_networks_add_text_separator + text;
+        textArea.value = textArea.value + EXTRA_NETWORK_SEPARATOR + text;
     }
 
     updateInput(textArea);
