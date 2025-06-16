@@ -967,7 +967,8 @@ footer {
 }
 
 .extra-network-pane .card:hover .card-buttons{
-    display: block;
+    display: flex;
+    gap: 4px;
 }
 
 .extra-network-pane .card-button{
@@ -1654,7 +1655,8 @@ body.resizing .resize-handle {
 }
 
 .extra-network-tree .tree-list-content:hover .card-buttons {
-    display: block;
+    display: flex;
+    gap: 4px;
 }
 
 .prompt textarea[disabled] {
