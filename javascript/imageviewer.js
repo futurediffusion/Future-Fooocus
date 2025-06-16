@@ -1,13 +1,19 @@
 // From A1111
 
 function closeModal() {
-    gradioApp().getElementById("lightboxModal").style.display = "none";
+    const modal = gradioApp().getElementById("lightboxModal");
+    const img = gradioApp().getElementById("modalImage");
+    if (img) {
+        img.style.transform = "";
+    }
+    modal.style.display = "none";
 }
 
 function showModal(event) {
     const source = event.target || event.srcElement;
     const modalImage = gradioApp().getElementById("modalImage");
     const lb = gradioApp().getElementById("lightboxModal");
+    modalImage.style.transform = "";
     modalImage.src = source.src;
     if (modalImage.style.display === 'none') {
         lb.style.setProperty('background-image', 'url(' + source.src + ')');
