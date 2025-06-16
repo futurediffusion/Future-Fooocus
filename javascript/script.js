@@ -221,3 +221,23 @@ function htmlDecode(input) {
   var doc = new DOMParser().parseFromString(input, "text/html");
   return doc.documentElement.textContent;
 }
+
+function openLoraEditor(event, tabname) {
+    var card = event.target.closest('.card');
+    if (!card) return;
+    var name = card.dataset.name;
+    var textbox = gradioApp().querySelector(`#${tabname}_lora_edit_user_metadata_name textarea`);
+    var button = gradioApp().getElementById(`${tabname}_lora_edit_user_metadata_button`);
+    if (textbox && button) {
+        textbox.value = name;
+        updateInput(textbox);
+        button.click();
+        popupId(`${tabname}_lora_edit_user_metadata`);
+    }
+    event.stopPropagation();
+}
+
+function refreshLoraCards() {
+    const btn = gradioApp().getElementById('lora_refresh_button');
+    if(btn) btn.click();
+}

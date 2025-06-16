@@ -710,12 +710,13 @@ with shared.gradio_root:
                 with gr.Group():
                     from modules import simple_lora_ui
                     lora_html = gr.HTML(simple_lora_ui.generate_cards(), elem_id='lora_cards')
+                    name_in, button_edit = simple_lora_ui.setup_ui('advanced', gallery, prompt)
 
                     def refresh_loras():
                         return gr.update(value=simple_lora_ui.generate_cards())
 
                 with gr.Row():
-                    refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button')
+                    refresh_files = gr.Button(label='Refresh', value='\U0001f504 Refresh All Files', variant='secondary', elem_classes='refresh_button', elem_id='lora_refresh_button')
                     refresh_files.click(fn=refresh_loras, outputs=lora_html, queue=False, show_progress=False)
 
             with gr.Tab(label='Styles'):
