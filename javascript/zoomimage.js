@@ -15,6 +15,7 @@ onUiLoaded(() => {
     let startX = 0;
     let startY = 0;
     let dragging = false;
+    let moved = false;
 
     function applyTransform() {
         img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
@@ -43,6 +44,7 @@ onUiLoaded(() => {
     img.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         dragging = true;
+        moved = false;
         startX = e.clientX;
         startY = e.clientY;
         img.style.cursor = 'grabbing';
@@ -51,8 +53,13 @@ onUiLoaded(() => {
 
     document.addEventListener('mousemove', (e) => {
         if (!dragging) return;
-        panX += e.clientX - startX;
-        panY += e.clientY - startY;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+            moved = true;
+        }
+        panX += dx;
+        panY += dy;
         startX = e.clientX;
         startY = e.clientY;
         applyTransform();
@@ -67,11 +74,23 @@ onUiLoaded(() => {
     img.addEventListener('mouseup', stopDrag);
     modal.addEventListener('mouseleave', stopDrag);
 
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            resetTransform();
+    img.onclick = (e) => {
+        if (moved) {
+            e.stopPropagation();
+            moved = false;
+        } else {
+            closeModal();
         }
-    });
+    };
+
+    modal.onclick = (e) => {
+        if (moved) {
+            e.stopPropagation();
+            moved = false;
+        } else if (e.target === modal) {
+            closeModal();
+        }
+    };
 
     // reset when modal closes via code
     const originalClose = closeModal;
