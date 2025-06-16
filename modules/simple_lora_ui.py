@@ -42,13 +42,18 @@ def generate_cards():
     files = list_loras()
     print('[LoRA UI] Detected files:', files)
     cards = []
+    default_preview = os.path.join(
+        os.path.dirname(__file__),
+        "NewLoraSystem",
+        "html",
+        "card-no-preview.png",
+    )
     for filepath in files:
         name = os.path.splitext(os.path.basename(filepath))[0]
         preview = find_preview(filepath)
-        if preview:
-            preview_html = f'<img src="file={preview}" class="preview">'
-        else:
-            preview_html = ''
+        if not preview or not os.path.exists(preview):
+            preview = default_preview
+        preview_html = f'<img src="file={preview}" class="preview">'
         metadata = read_metadata(filepath)
         metadata_json = html.escape(json.dumps(metadata))
         user_meta = read_user_metadata(filepath)
@@ -90,11 +95,16 @@ def load_editor(name):
     notes = user_meta.get('notes', '')
     sd_version = user_meta.get('sd version', 'Unknown')
     tags = ', '.join(build_tags(metadata)[:20])
+    default_preview = os.path.join(
+        os.path.dirname(__file__),
+        "NewLoraSystem",
+        "html",
+        "card-no-preview.png",
+    )
     preview = find_preview(path)
-    if preview:
-        preview_html = f'<img src="file={preview}" class="preview">'
-    else:
-        preview_html = ''
+    if not preview or not os.path.exists(preview):
+        preview = default_preview
+    preview_html = f'<img src="file={preview}" class="preview">'
     return [name, desc, activation, weight, notes, sd_version, tags, preview_html]
 
 
