@@ -119,7 +119,7 @@ def generate_cards():
         if activation_text:
             prompt_text += f" {activation_text}"
         prompt = f"\"{prompt_text}\""
-        onclick = f"cardClicked('advanced', {prompt}, '' , false);"
+        onclick = html.escape(f"cardClicked('advanced', {prompt}, '' , false);")
         args = {
             'style': '',
             'card_clicked': onclick,
