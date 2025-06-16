@@ -63,6 +63,8 @@
     let container; // suggestion container
     let selected = -1;
     let skipInput = false;
+    const attached = new WeakSet();
+    let dataLoaded = false;
 
     function parseCSV(line){
         const result=[];
@@ -136,6 +138,7 @@
     }
 
     function createContainer(area){
+        if(container) return;
         container = document.createElement('div');
         container.style.position = 'absolute';
         container.style.background = '#1e1e1e';
@@ -293,6 +296,8 @@
     }
 
     function attach(area){
+        if(attached.has(area)) return;
+        attached.add(area);
         createContainer(area);
         area.addEventListener('input', ()=>{
             if(skipInput){ skipInput=false; return; }
@@ -367,14 +372,25 @@
         const positiveArea = document.querySelector('#positive_prompt textarea');
         const negativeArea = document.querySelector('#negative_prompt textarea');
         if(!positiveArea && !negativeArea) return;
-        Promise.all([loadTags(), loadChants()]).then(()=>{
+        const doAttach = () => {
             if(positiveArea) attach(positiveArea);
             if(negativeArea) attach(negativeArea);
-        });
+        };
+        if(!dataLoaded){
+            Promise.all([loadTags(), loadChants()]).then(()=>{
+                dataLoaded = true;
+                doAttach();
+            });
+        }else{
+            doAttach();
+        }
     }
 
     if(window.onUiLoaded){
         onUiLoaded(init);
+        if(window.onUiUpdate){
+            onUiUpdate(init);
+        }
     }else{
         window.addEventListener('load', init);
     }
