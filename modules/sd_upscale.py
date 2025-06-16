@@ -115,8 +115,8 @@ def upscale_image(
         image: Image.Image,
         overlap: int,
         scale_factor: float,
-        tile_size: int = 384,
-        upscaler_name: str = "RealESRGAN_x4plus",
+        tile_size: int = 512,
+        upscaler_name: str = "None",
         batch_size: int = 4,
         progress_callback=None,
         prompt: str = "",
@@ -138,7 +138,7 @@ def upscale_image(
     scale_factor : float
         Overall scaling factor for the image.
     tile_size : int, optional
-        Size of each tile processed individually, by default ``384``.
+        Size of each tile processed individually, by default ``512``.
     upscaler_name : str, optional
         Name of the ESRGAN model to use. ``"None"`` disables the model and only
         performs a Lanczos resize.
