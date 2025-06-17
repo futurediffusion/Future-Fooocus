@@ -12,7 +12,7 @@ patch_all()
 
 class AsyncTask:
     def __init__(self, args):
-        from modules.flags import Performance, MetadataScheme, ip_list, disabled
+        from modules.flags import Performance, MetadataScheme, ip_list, disabled, refiner_swap_method as default_refiner_swap_method
         from modules.util import get_enabled_loras
         from modules.config import default_max_lora_number
         import args_manager
@@ -114,6 +114,11 @@ class AsyncTask:
         self.canny_low_threshold = args.pop()
         self.canny_high_threshold = args.pop()
         self.refiner_swap_method = args.pop()
+        valid_swap_methods = ['joint', 'separate', 'vae']
+        if self.refiner_swap_method not in valid_swap_methods:
+            print(f'[AsyncTask] Invalid refiner swap method: {self.refiner_swap_method}, '
+                  f'falling back to {default_refiner_swap_method}')
+            self.refiner_swap_method = default_refiner_swap_method
         self.controlnet_softness = args.pop()
         self.freeu_enabled = args.pop()
         self.freeu_b1 = args.pop()
