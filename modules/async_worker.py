@@ -130,6 +130,12 @@ class AsyncTask:
         self.freeu_b2 = args.pop()
         self.freeu_s1 = args.pop()
         self.freeu_s2 = args.pop()
+
+        # ensure FreeU parameters have sensible defaults
+        self.freeu_b1 = _safe_float(self.freeu_b1, 1.01)
+        self.freeu_b2 = _safe_float(self.freeu_b2, 1.02)
+        self.freeu_s1 = _safe_float(self.freeu_s1, 0.99)
+        self.freeu_s2 = _safe_float(self.freeu_s2, 0.95)
         self.debugging_inpaint_preprocessor = args.pop()
         self.inpaint_disable_initial_latent = args.pop()
         self.inpaint_engine = args.pop()
