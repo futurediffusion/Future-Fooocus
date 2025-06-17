@@ -56,6 +56,15 @@ class AsyncTask:
 
         self.performance_selection = Performance(args.pop())
         self.steps = self.performance_selection.steps()
+        # ensure steps is a sane integer
+        try:
+            self.steps = int(self.steps)
+        except (TypeError, ValueError):
+            print(f"[AsyncTask] Invalid steps value: {self.steps}, resetting to default")
+            self.steps = modules.flags.Steps[modules.config.default_performance].value
+        if self.steps < 5:
+            print(f"[AsyncTask] Steps too low ({self.steps}), resetting to default")
+            self.steps = modules.flags.Steps[modules.config.default_performance].value
         self.original_steps = self.steps
 
         self.aspect_ratios_selection = args.pop()
