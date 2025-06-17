@@ -8,6 +8,7 @@ import modules.config
 import fooocus_version
 import modules.html
 import modules.async_worker as worker
+from modules.safe_async_task import SafeAsyncTask
 import modules.constants as constants
 import modules.flags as flags
 import modules.gradio_hijack as grh
@@ -43,9 +44,9 @@ def get_task(*args):
     # Debug the arguments passed to AsyncTask
     print(f"[DEBUG] args before AsyncTask: {args}")
 
-    return worker.AsyncTask(args=args)
+    return SafeAsyncTask(args=args)
 
-def generate_clicked(task: worker.AsyncTask):
+def generate_clicked(task: SafeAsyncTask):
     import ldm_patched.modules.model_management as model_management
 
     with model_management.interrupt_processing_mutex:
@@ -1124,7 +1125,7 @@ with shared.gradio_root:
             .then(fn=update_history_link, outputs=history_link) \
             .then(fn=lambda: None, _js='playNotification').then(fn=lambda: None, _js='refresh_grid_delayed')
 
-        reset_button.click(lambda: [worker.AsyncTask(args=[]), False, gr.update(visible=True, interactive=True)] +
+        reset_button.click(lambda: [SafeAsyncTask(args=[]), False, gr.update(visible=True, interactive=True)] +
                                    [gr.update(visible=False)] * 6 +
                                    [gr.update(visible=True, value=[])],
                            outputs=[currentTask, state_is_generating, generate_button,
