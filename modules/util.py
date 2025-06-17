@@ -442,6 +442,13 @@ def get_filname_by_stem(lora_name, filenames: List[str]) -> str | None:
 
 
 def get_file_from_folder_list(name, folders):
+    if not isinstance(name, (str, os.PathLike)):
+        raise TypeError(
+            f"Invalid file name type {type(name).__name__}; expected str or os.PathLike"
+        )
+
+    name = os.fspath(name)
+
     if not isinstance(folders, list):
         folders = [folders]
 
