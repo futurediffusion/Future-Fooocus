@@ -12,7 +12,14 @@ import modules.sdxl_styles
 from modules.flags import MetadataScheme, Performance, Steps
 from modules.flags import SAMPLERS, CIVITAI_NO_KARRAS
 from modules.hash_cache import sha256_from_cache
-from modules.util import quote, unquote, extract_styles_from_prompt, is_json, get_file_from_folder_list
+from modules.util import (
+    quote,
+    unquote,
+    extract_styles_from_prompt,
+    is_json,
+    get_file_from_folder_list,
+    parse_resolution_label,
+)
 
 re_param_code = r'\s*(\w[\w \-/]+):\s*("(?:\\.|[^\\"])+"|[^,]*)(?:,|$)'
 re_param = re.compile(re_param_code)
@@ -261,11 +268,9 @@ def parse_meta_from_preset(preset_content):
         elif settings_key == "default_aspect_ratio":
             if settings_key in items and items[settings_key] is not None:
                 default_aspect_ratio = items[settings_key]
-                width, height = default_aspect_ratio.split('*')
             else:
                 default_aspect_ratio = getattr(modules.config, settings_key)
-                width, height = default_aspect_ratio.split('×')
-                height = height[:height.index(" ")]
+            width, height = modules.util.parse_resolution_label(default_aspect_ratio)
             preset_prepared[meta_key] = (width, height)
         else:
             preset_prepared[meta_key] = items[settings_key] if settings_key in items and items[settings_key] is not None else getattr(modules.config, settings_key)
