@@ -162,6 +162,9 @@ def sample_hacked(model, noise, positive, negative, cfg, device, sampler, sigmas
 @torch.no_grad()
 @torch.inference_mode()
 def calculate_sigmas_scheduler_hacked(model, scheduler_name, steps):
+    # ensure steps is an integer as required by torch.linspace in
+    # k_diffusion's get_sigmas_* implementations
+    steps = int(steps)
     if scheduler_name == "karras":
         sigmas = k_diffusion_sampling.get_sigmas_karras(n=steps, sigma_min=float(model.model_sampling.sigma_min), sigma_max=float(model.model_sampling.sigma_max))
     elif scheduler_name == "exponential":
