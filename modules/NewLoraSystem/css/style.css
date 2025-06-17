@@ -1,6 +1,10 @@
 /* temporary fix to load default gradio font in frontend instead of backend */
 
-@import url('webui-assets/css/sourcesanspro.css');
+/*
+ * Load Source Sans Pro from Google Fonts. The previous local path would
+ * trigger a 404 in the browser which could cause style rules to be skipped.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap');
 
 /* general gradio fixes */
 
