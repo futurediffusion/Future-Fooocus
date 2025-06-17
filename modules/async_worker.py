@@ -1176,8 +1176,8 @@ def worker():
 
         async_task.outpaint_selections = [o.lower() for o in async_task.outpaint_selections]
         base_model_additional_loras = []
-        async_task.uov_method = async_task.uov_method.casefold()
-        async_task.enhance_uov_method = async_task.enhance_uov_method.casefold()
+        async_task.uov_method = str(async_task.uov_method).casefold()
+        async_task.enhance_uov_method = str(async_task.enhance_uov_method).casefold()
 
         if fooocus_expansion in async_task.style_selections:
             use_expansion = True
