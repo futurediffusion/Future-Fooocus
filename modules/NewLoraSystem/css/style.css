@@ -1031,7 +1031,7 @@ footer {
     overflow: hidden;
     cursor: pointer;
 
-    background-image: url('./file=html/card-no-preview.png')
+    background-image: url('/file=modules/NewLoraSystem/html/card-no-preview.png')
 }
 
 .extra-network-pane .card:hover{
