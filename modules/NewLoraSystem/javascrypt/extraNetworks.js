@@ -281,6 +281,18 @@ function cardClicked(tabname, textToAdd, textToAddNegative, allowNegativePrompt)
     } else {
         updatePromptArea(textToAdd, promptArea);
     }
+
+    const loraBox = gradioApp().querySelector('#lora_selection_json textarea');
+    if (loraBox) {
+        let data = [];
+        try { data = JSON.parse(loraBox.value || '[]'); } catch (e) {}
+        const m = textToAdd.match(/<lora:([^:]+):([+-]?(?:\d+(?:\.\d*)?|\.\d+))>/);
+        if (m) {
+            data.push([m[1] + '.safetensors', parseFloat(m[2])]);
+            loraBox.value = JSON.stringify(data);
+            loraBox.dispatchEvent(new Event('input', {bubbles: true}));
+        }
+    }
 }
 
 function saveCardPreview(event, tabname, filename) {

@@ -32,16 +32,34 @@ def get_task(*args):
     args = list(args)
     args.pop(0)
 
-    # Insert default LoRA placeholders if the UI didn't provide any.
+    lora_insert_index = 16  # after base_model, refiner_model, refiner_switch
+    lora_json = "[]"
+    if len(args) > lora_insert_index:
+        lora_json = args.pop(lora_insert_index)
+
+    selected_loras = []
+    try:
+        selected_loras = json.loads(lora_json)
+    except Exception as e:
+        print(f"[DEBUG] failed to parse lora selection: {e}")
+
     lora_placeholders = []
+    max_slots = modules.config.default_max_lora_number
+    combined = []
+    for name, weight in selected_loras:
+        combined.append((True, name, weight))
+        if len(combined) >= max_slots:
+            break
     for enabled, name, weight in modules.config.default_loras:
+        if len(combined) >= max_slots:
+            break
+        combined.append((enabled, name, weight))
+
+    for enabled, name, weight in combined:
         lora_placeholders.extend([enabled, name, weight])
 
-    lora_insert_index = 16  # after base_model, refiner_model, refiner_switch
-    if len(args) < lora_insert_index + len(lora_placeholders):
-        args[lora_insert_index:lora_insert_index] = lora_placeholders
+    args[lora_insert_index:lora_insert_index] = lora_placeholders
 
-    # Debug the arguments passed to AsyncTask
     print(f"[DEBUG] args before AsyncTask: {args}")
 
     return SafeAsyncTask(args=args)
@@ -727,6 +745,8 @@ with shared.gradio_root:
                     print('[LoRA UI] Inserting cards into UI')
                     lora_html = gr.HTML(simple_lora_ui.generate_cards(), elem_id='lora_cards')
                     name_in, button_edit = simple_lora_ui.setup_ui('advanced', gallery, prompt)
+                    lora_selection = gr.Textbox(visible=False, elem_id='lora_selection_json', value='[]')
+                    lora_ctrls.append(lora_selection)
 
                     def refresh_loras():
                         print('[LoRA UI] Refreshing cards')
