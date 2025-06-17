@@ -601,6 +601,30 @@ function addTagsToPrompt(tags, tabname){
     updatePromptArea(tags, textarea);
 }
 
+function createVisualizationTable(tags, tagFrequencies){
+    const table = document.createElement("table");
+    table.className = "metadata-visualization";
+
+    Object.keys(tags).forEach(tag => {
+        const row = document.createElement("tr");
+        const labelCell = document.createElement("td");
+        labelCell.textContent = tag;
+
+        const valueCell = document.createElement("td");
+        if(tagFrequencies && typeof tagFrequencies === 'object'){
+            valueCell.textContent = tagFrequencies[tag] || 0;
+        }else{
+            valueCell.textContent = tags[tag];
+        }
+
+        row.appendChild(labelCell);
+        row.appendChild(valueCell);
+        table.appendChild(row);
+    });
+
+    return table;
+}
+
 function extraNetworksShowMetadata(text, tabname) {
     try {
         let parsed = JSON.parse(text);
