@@ -10,7 +10,7 @@ import network
 import torch
 from typing import Union
 
-from modules import shared, sd_models, scripts
+from modules import sd_models, config
 from backend.utils import load_torch_file
 from backend.patcher.lora import model_lora_keys_clip, model_lora_keys_unet, load_lora
 
@@ -126,7 +126,14 @@ def load_networks(names, te_multipliers=None, unet_multipliers=None, dyn_dims=No
 
 
 def process_network_files(names: list[str] | None = None):
-    candidates = list(shared.walk_files(shared.cmd_opts.lora_dir, allowed_extensions=[".pt", ".ckpt", ".safetensors"]))
+    candidates = []
+    for folder in config.paths_loras:
+        if not os.path.isdir(folder):
+            continue
+        for root_dir, _dirs, files in os.walk(folder):
+            for file in files:
+                if os.path.splitext(file)[1].lower() in [".pt", ".ckpt", ".safetensors"]:
+                    candidates.append(os.path.join(root_dir, file))
     for filename in candidates:
         if os.path.isdir(filename):
             continue
@@ -160,7 +167,8 @@ def list_available_networks():
     available_network_hash_lookup.clear()
     forbidden_network_aliases.update({"none": 1, "Addams": 1})
 
-    os.makedirs(shared.cmd_opts.lora_dir, exist_ok=True)
+    for folder in config.paths_loras:
+        os.makedirs(folder, exist_ok=True)
 
     process_network_files()
 
@@ -169,9 +177,6 @@ re_network_name = re.compile(r"(.*)\s*\([0-9a-fA-F]+\)")
 
 
 def infotext_pasted(infotext, params):
-    if "AddNet Module 1" in [x[1] for x in scripts.scripts_txt2img.infotext_fields]:
-        return  # if the other extension is active, it will handle those fields, no need to do anything
-
     added = []
 
     for k in params:
