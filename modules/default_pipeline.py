@@ -71,6 +71,10 @@ def refresh_base_model(name, vae_name=None):
 
     filename = get_file_from_folder_list(name, modules.config.paths_checkpoints)
 
+    # Sanitize invalid values (e.g., False) for vae_name
+    if not isinstance(vae_name, (str, os.PathLike)):
+        vae_name = None
+
     vae_filename = None
     if vae_name is not None and vae_name != modules.flags.default_vae:
         vae_filename = get_file_from_folder_list(vae_name, modules.config.path_vae)
@@ -270,6 +274,10 @@ def refresh_everything(refiner_model_name, base_model_name, loras,
     final_vae = None
     final_refiner_unet = None
     final_refiner_vae = None
+
+    # Validate VAE argument to avoid passing invalid types
+    if not isinstance(vae_name, (str, os.PathLike)):
+        vae_name = None
 
     if use_synthetic_refiner and refiner_model_name == 'None':
         print('Synthetic Refiner Activated')
