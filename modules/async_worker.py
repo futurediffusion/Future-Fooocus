@@ -1,4 +1,5 @@
 import threading
+import os
 
 from extras.inpaint_mask import generate_mask_from_image, SAMOptions
 from modules.patch import PatchSettings, patch_settings, patch_all
@@ -729,10 +730,11 @@ def worker():
                                                           modules.config.default_max_lora_number,
                                                           lora_filenames=lora_filenames)
         loras += async_task.performance_loras
+        vae_arg = async_task.vae_name if isinstance(async_task.vae_name, (str, os.PathLike)) else None
         pipeline.refresh_everything(refiner_model_name=async_task.refiner_model_name,
                                     base_model_name=async_task.base_model_name,
                                     loras=loras, base_model_additional_loras=base_model_additional_loras,
-                                    use_synthetic_refiner=use_synthetic_refiner, vae_name=async_task.vae_name)
+                                    use_synthetic_refiner=use_synthetic_refiner, vae_name=vae_arg)
         pipeline.set_clip_skip(async_task.clip_skip)
         if advance_progress:
             current_progress += 1
