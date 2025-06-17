@@ -718,6 +718,7 @@ def worker():
             width = async_task.overwrite_width
         if async_task.overwrite_height > 0:
             height = async_task.overwrite_height
+        width, height = int(width), int(height)
         return steps, switch, width, height
 
     def process_prompt(async_task, prompt, negative_prompt, base_model_additional_loras, image_number, disable_seed_increment, use_expansion, use_style,
