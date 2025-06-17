@@ -374,6 +374,9 @@ def get_candidate_vae(steps, switch, denoise=1.0, refiner_swap_method='joint'):
 @torch.no_grad()
 @torch.inference_mode()
 def process_diffusion(positive_cond, negative_cond, steps, switch, width, height, image_seed, callback, sampler_name, scheduler_name, latent=None, denoise=1.0, tiled=False, cfg_scale=7.0, refiner_swap_method='joint', disable_preview=False):
+    width = int(width)
+    height = int(height)
+    assert width >= 8 and height >= 8, "Width/Height too small for convolution layers"
     target_unet, target_vae, target_refiner_unet, target_refiner_vae, target_clip \
         = final_unet, final_vae, final_refiner_unet, final_refiner_vae, final_clip
 
@@ -399,7 +402,7 @@ def process_diffusion(positive_cond, negative_cond, steps, switch, width, height
     print(f'[Sampler] refiner_swap_method = {refiner_swap_method}')
 
     if latent is None:
-        initial_latent = core.generate_empty_latent(width=width, height=height, batch_size=1)
+        initial_latent = core.generate_empty_latent(width=int(width), height=int(height), batch_size=1)
     else:
         initial_latent = latent
 
