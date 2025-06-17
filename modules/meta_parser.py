@@ -335,7 +335,12 @@ class MetadataParser(ABC):
                 else:
                     lora_hash = sha256_from_cache(lora_path)
                 self.loras.append((Path(lora_name).stem, lora_weight, lora_hash))
-        self.vae_name = Path(vae_name).stem
+        # handle invalid values that are not path-like
+        if isinstance(vae_name, (str, os.PathLike)):
+            self.vae_name = Path(vae_name).stem
+        else:
+            print(f"[Warning] Invalid vae_name type: {type(vae_name).__name__} -> {vae_name}")
+            self.vae_name = 'invalid'
 
 
 class A1111MetadataParser(MetadataParser):
