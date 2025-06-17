@@ -1299,7 +1299,20 @@ def worker():
         progressbar(async_task, current_progress, 'Initializing ...')
 
         loras = async_task.loras
-        if not skip_prompt_processing:
+        if skip_prompt_processing:
+            lora_filenames = modules.util.remove_performance_lora(modules.config.lora_filenames,
+                                                                  async_task.performance_selection)
+            loras, _ = parse_lora_references_from_prompt(async_task.prompt, loras,
+                                                         modules.config.default_max_lora_number,
+                                                         lora_filenames=lora_filenames)
+            loras += async_task.performance_loras
+            vae_arg = async_task.vae_name if isinstance(async_task.vae_name, (str, os.PathLike)) else None
+            pipeline.refresh_everything(refiner_model_name=async_task.refiner_model_name,
+                                        base_model_name=async_task.base_model_name,
+                                        loras=loras, base_model_additional_loras=base_model_additional_loras,
+                                        use_synthetic_refiner=use_synthetic_refiner, vae_name=vae_arg)
+            pipeline.set_clip_skip(async_task.clip_skip)
+        else:
             tasks, use_expansion, loras, current_progress = process_prompt(async_task, async_task.prompt, async_task.negative_prompt,
                                                          base_model_additional_loras, async_task.image_number,
                                                          async_task.disable_seed_increment, use_expansion, use_style,
