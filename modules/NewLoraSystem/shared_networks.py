@@ -8,6 +8,7 @@ import functools
 import network
 
 import torch
+from safetensors.torch import load_file
 from typing import Union
 
 from modules import sd_models, config
@@ -57,7 +58,10 @@ def load_lora_for_models(model, clip, lora, strength_model, strength_clip, filen
 
 @functools.lru_cache(maxsize=5)
 def load_lora_state_dict(filename):
-    return torch.load(filename, map_location="cpu", weights_only=True)
+    if filename.endswith(".safetensors"):
+        return load_file(filename, device="cpu")
+    else:
+        return torch.load(filename, map_location="cpu", weights_only=False)
 
 
 def load_network(name, network_on_disk):
