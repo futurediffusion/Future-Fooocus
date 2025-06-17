@@ -7,6 +7,17 @@ import shared
 import gradio as gr
 import json
 import html
+import datetime
+from modules import util
+
+
+def pretty_bytes(num: int) -> str:
+    """Return a human readable file size."""
+    for unit in ["B", "KB", "MB", "GB", "TB"]:
+        if num < 1024:
+            return f"{num:.1f} {unit}"
+        num /= 1024
+    return f"{num:.1f} PB"
 try:
     import safetensors.torch as st
 except Exception:
@@ -32,6 +43,24 @@ find_preview = lora_utils.find_preview
 
 
 build_tags = lora_utils.build_tags
+
+
+def build_filedata_table(path: str) -> str:
+    """Return HTML table with basic file metadata."""
+    try:
+        stats = os.stat(path)
+        size = pretty_bytes(stats.st_size)
+        mtime = datetime.datetime.fromtimestamp(stats.st_mtime).strftime('%Y-%m-%d %H:%M')
+        filehash = util.sha256(path)
+        table = "<table class='file-metadata'>"
+        table += f"<tr><th>Filename:</th><td>{html.escape(os.path.basename(path))}</td></tr>"
+        table += f"<tr><th>File size:</th><td>{size}</td></tr>"
+        table += f"<tr><th>Hash:</th><td>{filehash}</td></tr>"
+        table += f"<tr><th>Modified:</th><td>{mtime}</td></tr>"
+        table += "</table>"
+    except Exception:
+        table = ""
+    return table
 
 
 def generate_cards():
@@ -89,7 +118,7 @@ def generate_cards():
 def load_editor(name):
     path = get_lora_path(name)
     if not path:
-        return [name, '', '', 1.0, '', 'Unknown', '', '']
+        return [name, '', '', 1.0, '', 'Unknown', '', '', '']
     metadata = read_metadata(path)
     user_meta = read_user_metadata(path)
     desc = user_meta.get('description', '')
@@ -98,6 +127,7 @@ def load_editor(name):
     notes = user_meta.get('notes', '')
     sd_version = user_meta.get('sd version', 'Unknown')
     tags = ', '.join(build_tags(metadata)[:20])
+    filedata = build_filedata_table(path)
     default_preview = os.path.join(
         os.path.dirname(__file__),
         "NewLoraSystem",
@@ -108,7 +138,7 @@ def load_editor(name):
     if not preview or not os.path.exists(preview):
         preview = default_preview
     preview_html = f'<img src="file={preview}" class="preview">'
-    return [name, desc, activation, weight, notes, sd_version, tags, preview_html]
+    return [name, desc, activation, weight, notes, sd_version, tags, preview_html, filedata]
 
 
 def save_metadata(name, description, activation, weight, notes, sd_version):
@@ -153,6 +183,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
         button_edit = gr.Button("Edit user metadata", visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_button")
         title = gr.HTML()
         desc = gr.Textbox(label="Description", lines=4)
+        filedata_html = gr.HTML()
         activation = gr.Textbox(label="Activation text")
         weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
         notes = gr.TextArea(label="Notes", lines=4)
@@ -178,7 +209,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
 
         add_tags.click(fn=add_tags_fn, inputs=[tags, prompt], outputs=prompt, show_progress=False)
 
-        button_edit.click(fn=load_editor, inputs=[name_in], outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_html])
+        button_edit.click(fn=load_editor, inputs=[name_in], outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_html, filedata_html])
 
         save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
 
