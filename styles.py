@@ -1,6 +1,5 @@
 from __future__ import annotations
 from pathlib import Path
-from modules import errors
 import csv
 import os
 import typing
@@ -144,8 +143,8 @@ class StyleDatabase:
                     self.styles[row["name"]] = PromptStyle(
                         row["name"], prompt, negative_prompt, str(path)
                     )
-        except Exception:
-            errors.report(f'Error loading styles from {path}: ', exc_info=True)
+        except Exception as e:
+            print(f'Error loading styles from {path}: {e}')
 
     def get_style_paths(self) -> set:
         """Returns a set of all distinct paths of files that styles are loaded from."""
