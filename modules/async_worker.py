@@ -5,6 +5,7 @@ from extras.inpaint_mask import generate_mask_from_image, SAMOptions
 from modules.patch import PatchSettings, patch_settings, patch_all
 import modules.config
 import modules.sdxl_styles
+import modules.flags as flags
 import shared
 
 patch_all()
@@ -100,6 +101,10 @@ class AsyncTask:
         self.clip_skip = args.pop()
         self.sampler_name = args.pop()
         self.scheduler_name = args.pop()
+        if self.scheduler_name not in flags.scheduler_list:
+            print(f'[AsyncTask] Invalid scheduler name: {self.scheduler_name}, '
+                  f'falling back to {modules.config.default_scheduler}')
+            self.scheduler_name = modules.config.default_scheduler
         self.vae_name = args.pop()
         self.overwrite_step = args.pop()
         self.overwrite_switch = args.pop()
