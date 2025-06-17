@@ -1,6 +1,6 @@
 import os
 
-from modules import sd_models, cache, shared
+from modules import sd_models, cache
 from modules.util import sha256
 
 
@@ -56,7 +56,10 @@ class NetworkOnDisk:
 
     def get_alias(self):
         import networks
-        if shared.opts.lora_preferred_name == "Filename" or self.alias.lower() in networks.forbidden_network_aliases:
+        # Fooocus does not expose the AUTOMATIC1111 `shared` options object.
+        # Always return the filename when the alias is forbidden, otherwise use
+        # the alias saved in the metadata.
+        if self.alias.lower() in networks.forbidden_network_aliases:
             return self.name
         else:
             return self.alias
