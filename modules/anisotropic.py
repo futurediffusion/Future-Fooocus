@@ -86,9 +86,18 @@ def _bilateral_blur(
         sigma_color = sigma_color.to(device=input.device, dtype=input.dtype).view(-1, 1, 1, 1, 1)
 
     ky, kx = _unpack_2d_ks(kernel_size)
-    pad_y, pad_x = _compute_zero_padding(kernel_size)
+    h, w = input.shape[-2:]
+    if h < ky or w < kx:
+        return input
 
-    padded_input = pad(input, (pad_x, pad_x, pad_y, pad_y), mode=border_type)
+    pad_y, pad_x = _compute_zero_padding(kernel_size)
+    pad_y = min(pad_y, h // 2)
+    pad_x = min(pad_x, w // 2)
+
+    if pad_y > 0 or pad_x > 0:
+        padded_input = pad(input, (pad_x, pad_x, pad_y, pad_y), mode=border_type)
+    else:
+        padded_input = input
     unfolded_input = padded_input.unfold(2, ky, 1).unfold(3, kx, 1).flatten(-2)  # (B, C, H, W, Ky x Kx)
 
     if guidance is None:
