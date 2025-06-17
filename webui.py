@@ -31,6 +31,9 @@ def get_task(*args):
     args = list(args)
     args.pop(0)
 
+    # Debug the arguments passed to AsyncTask
+    print(f"[DEBUG] args before AsyncTask: {args}")
+
     return worker.AsyncTask(args=args)
 
 def generate_clicked(task: worker.AsyncTask):
