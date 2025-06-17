@@ -160,7 +160,9 @@ if isinstance(args_manager.args.preset, str):
 shared.gradio_root = gr.Blocks(title=title).queue()
 
 with shared.gradio_root:
-    currentTask = gr.State(worker.AsyncTask(args=[]))
+    # Initialize without starting an AsyncTask to avoid errors on startup.
+    # The task will be created later when the user submits generation parameters.
+    currentTask = gr.State(None)
     inpaint_engine_state = gr.State('empty')
     seed_actual = gr.State(-1)
     with gr.Row():
