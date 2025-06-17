@@ -554,6 +554,22 @@ def cleanup_prompt(prompt):
     return cleaned_prompt[:-2]
 
 
+def parse_resolution_label(label: str) -> tuple[int, int]:
+    """Extract ``width`` and ``height`` integers from aspect ratio label strings.
+
+    Examples of supported formats include ``'832×1216 <span>'``, ``'640*1536'``
+    and ``'512x512'``.  If extraction fails the function returns ``(0, 0)``.
+    """
+    if not isinstance(label, str):
+        return 0, 0
+
+    cleaned = label.replace('×', ' ').replace('*', ' ').replace('x', ' ')
+    digits = re.findall(r"\d+", cleaned)
+    if len(digits) >= 2:
+        return int(digits[0]), int(digits[1])
+    return 0, 0
+
+
 def apply_wildcards(wildcard_text, rng, i, read_wildcards_in_order) -> str:
     for _ in range(modules.config.wildcards_max_bfs_depth):
         placeholders = re.findall(r'__([\w-]+)__', wildcard_text)

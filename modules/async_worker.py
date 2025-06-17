@@ -253,9 +253,19 @@ def worker():
     from modules.sdxl_styles import apply_style, get_random_style, fooocus_expansion, apply_arrays, random_style_name
     from modules.private_logger import log
     from extras.expansion import safe_str
-    from modules.util import (remove_empty_str, HWC3, resize_image, get_image_shape_ceil, set_image_shape_ceil,
-                              get_shape_ceil, resample_image, erode_or_dilate, parse_lora_references_from_prompt,
-                              apply_wildcards)
+    from modules.util import (
+        remove_empty_str,
+        HWC3,
+        resize_image,
+        get_image_shape_ceil,
+        set_image_shape_ceil,
+        get_shape_ceil,
+        resample_image,
+        erode_or_dilate,
+        parse_lora_references_from_prompt,
+        apply_wildcards,
+        parse_resolution_label,
+    )
     from modules.upscaler import perform_upscale
     from modules.flags import Performance
     from modules.meta_parser import get_metadata_parser
@@ -1230,8 +1240,7 @@ def worker():
         denoising_strength = 1.0
         tiled = False
 
-        width, height = async_task.aspect_ratios_selection.replace('×', ' ').split(' ')[:2]
-        width, height = int(width), int(height)
+        width, height = modules.util.parse_resolution_label(async_task.aspect_ratios_selection)
 
         skip_prompt_processing = False
 

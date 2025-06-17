@@ -194,5 +194,18 @@ class TestGetFileFromFolderList(unittest.TestCase):
 
     def test_invalid_name_raises(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            with self.assertRaises(TypeError):
-                util.get_file_from_folder_list(True, [tmpdir])
+                with self.assertRaises(TypeError):
+                    util.get_file_from_folder_list(True, [tmpdir])
+
+
+class TestParseResolutionLabel(unittest.TestCase):
+    def test_parses_resolution_label(self):
+        cases = [
+            ("832×1216 <span style='color: grey;'>∣ 13:19</span>", (832, 1216)),
+            ("640*1536", (640, 1536)),
+            ("512x512", (512, 512)),
+            ("invalid", (0, 0)),
+        ]
+
+        for value, expected in cases:
+            self.assertEqual(util.parse_resolution_label(value), expected)
