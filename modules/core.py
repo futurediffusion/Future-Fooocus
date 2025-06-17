@@ -152,6 +152,8 @@ def load_model(ckpt_filename, vae_filename=None):
 @torch.no_grad()
 @torch.inference_mode()
 def generate_empty_latent(width=1024, height=1024, batch_size=1):
+    width = int(width)
+    height = int(height)
     return opEmptyLatentImage.generate(width=width, height=height, batch_size=batch_size)[0]
 
 
