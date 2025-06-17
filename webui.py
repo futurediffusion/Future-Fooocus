@@ -31,6 +31,15 @@ def get_task(*args):
     args = list(args)
     args.pop(0)
 
+    # Insert default LoRA placeholders if the UI didn't provide any.
+    lora_placeholders = []
+    for enabled, name, weight in modules.config.default_loras:
+        lora_placeholders.extend([enabled, name, weight])
+
+    lora_insert_index = 16  # after base_model, refiner_model, refiner_switch
+    if len(args) < lora_insert_index + len(lora_placeholders):
+        args[lora_insert_index:lora_insert_index] = lora_placeholders
+
     # Debug the arguments passed to AsyncTask
     print(f"[DEBUG] args before AsyncTask: {args}")
 
