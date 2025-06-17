@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -328,7 +329,11 @@ class MetadataParser(ABC):
         for (lora_name, lora_weight) in loras:
             if lora_name != 'None':
                 lora_path = get_file_from_folder_list(lora_name, modules.config.paths_loras)
-                lora_hash = sha256_from_cache(lora_path)
+                if not os.path.isfile(lora_path):
+                    print(f"[Warning] LoRA file not found: {lora_path}")
+                    lora_hash = 'N/A'
+                else:
+                    lora_hash = sha256_from_cache(lora_path)
                 self.loras.append((Path(lora_name).stem, lora_weight, lora_hash))
         self.vae_name = Path(vae_name).stem
 
