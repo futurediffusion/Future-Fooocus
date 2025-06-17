@@ -178,7 +178,7 @@ def save_preview(name, gallery: List, index: int):
 
 
 def create_editor_ui(tabname: str, gallery, prompt):
-    with gr.Box(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata", elem_classes="edit-user-metadata"):
+    with gr.Box(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata", elem_classes="edit-user-metadata") as box:
         name_in = gr.Textbox(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_name")
         button_edit = gr.Button("Edit user metadata", visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_button")
         title = gr.HTML()
@@ -209,7 +209,11 @@ def create_editor_ui(tabname: str, gallery, prompt):
 
         add_tags.click(fn=add_tags_fn, inputs=[tags, prompt], outputs=prompt, show_progress=False)
 
-        button_edit.click(fn=load_editor, inputs=[name_in], outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_html, filedata_html])
+        button_edit.click(
+            fn=load_editor,
+            inputs=[name_in],
+            outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_html, filedata_html],
+        ).then(fn=lambda: gr.update(visible=True), inputs=[], outputs=[box])
 
         save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
 
