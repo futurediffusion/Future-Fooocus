@@ -191,3 +191,8 @@ class TestGetFileFromFolderList(unittest.TestCase):
     def test_all_invalid_raises(self):
         with self.assertRaises(TypeError):
             util.get_file_from_folder_list('file.txt', True)
+
+    def test_invalid_name_raises(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with self.assertRaises(TypeError):
+                util.get_file_from_folder_list(True, [tmpdir])
