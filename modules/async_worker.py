@@ -25,7 +25,9 @@ class AsyncTask:
         self.performance_loras = []
 
         if len(args) == 0:
-            return
+            raise RuntimeError(
+                "Received empty args list in AsyncTask, expected at least 1 element."
+            )
 
         args.reverse()
         self.generate_image_grid = args.pop()
@@ -157,6 +159,9 @@ class AsyncTask:
         self.enhance_uov_prompt_type = args.pop()
         self.enhance_ctrls = []
         for _ in range(modules.config.default_enhance_tabs):
+            if len(args) < 16:
+                print("[AsyncTask] Warning: Received incomplete enhance arguments.")
+                break
             enhance_enabled = args.pop()
             enhance_mask_dino_prompt_text = args.pop()
             enhance_prompt = args.pop()
