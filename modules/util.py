@@ -445,12 +445,22 @@ def get_file_from_folder_list(name, folders):
     if not isinstance(folders, list):
         folders = [folders]
 
+    valid_folders = []
     for folder in folders:
+        if isinstance(folder, (str, os.PathLike)):
+            valid_folders.append(folder)
+        else:
+            print(f'Warning: ignoring invalid folder path {folder!r}')
+
+    if not valid_folders:
+        raise TypeError('No valid folder paths provided to get_file_from_folder_list')
+
+    for folder in valid_folders:
         filename = os.path.abspath(os.path.realpath(os.path.join(folder, name)))
         if os.path.isfile(filename):
             return filename
 
-    return os.path.abspath(os.path.realpath(os.path.join(folders[0], name)))
+    return os.path.abspath(os.path.realpath(os.path.join(valid_folders[0], name)))
 
 
 def get_enabled_loras(loras: list, remove_none=True) -> list:

@@ -175,3 +175,19 @@ class TestWildcardCache(unittest.TestCase):
 
         modules.config.path_wildcards = original_path
         modules.config.wildcard_filenames = original_files
+
+
+class TestGetFileFromFolderList(unittest.TestCase):
+    def test_invalid_folder_path_skipped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = 'file.txt'
+            path = os.path.join(tmpdir, test_file)
+            with open(path, 'w') as f:
+                f.write('data')
+
+            filename = util.get_file_from_folder_list(test_file, [True, tmpdir])
+            self.assertEqual(filename, os.path.abspath(path))
+
+    def test_all_invalid_raises(self):
+        with self.assertRaises(TypeError):
+            util.get_file_from_folder_list('file.txt', True)
