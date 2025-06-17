@@ -1,6 +1,7 @@
 import os
 
-from modules import sd_models, cache, hashes, shared
+from modules import sd_models, cache, shared
+from modules.util import sha256
 
 
 metadata_tags_order = {"ss_sd_model_name": 1, "ss_resolution": 2, "ss_clip_skip": 3, "ss_num_train_images": 10, "ss_tag_frequency": 20}
@@ -37,7 +38,7 @@ class NetworkOnDisk:
         self.shorthash = None
         self.set_hash(
             self.metadata.get('sshs_model_hash') or
-            hashes.sha256_from_cache(self.filename, "lora/" + self.name, use_addnet_hash=self.is_safetensors) or
+            sha256(self.filename, use_addnet_hash=self.is_safetensors) or
             ''
         )
 
@@ -51,7 +52,7 @@ class NetworkOnDisk:
 
     def read_hash(self):
         if not self.hash:
-            self.set_hash(hashes.sha256(self.filename, "lora/" + self.name, use_addnet_hash=self.is_safetensors) or '')
+            self.set_hash(sha256(self.filename, use_addnet_hash=self.is_safetensors) or '')
 
     def get_alias(self):
         import networks
