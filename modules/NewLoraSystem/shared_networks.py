@@ -11,8 +11,7 @@ import torch
 from typing import Union
 
 from modules import sd_models, config
-from backend.utils import load_torch_file
-from backend.patcher.lora import model_lora_keys_clip, model_lora_keys_unet, load_lora
+from ldm_patched.modules.lora import model_lora_keys_clip, model_lora_keys_unet, load_lora
 
 
 def load_lora_for_models(model, clip, lora, strength_model, strength_clip, filename='default'):
@@ -58,7 +57,7 @@ def load_lora_for_models(model, clip, lora, strength_model, strength_clip, filen
 
 @functools.lru_cache(maxsize=5)
 def load_lora_state_dict(filename):
-    return load_torch_file(filename, safe_load=True)
+    return torch.load(filename, map_location="cpu")
 
 
 def load_network(name, network_on_disk):
@@ -69,8 +68,6 @@ def load_network(name, network_on_disk):
 
 
 def load_networks(names, te_multipliers=None, unet_multipliers=None, dyn_dims=None):
-    global lora_state_dict_cache
-
     current_sd = sd_models.model_data.get_sd_model()
     if current_sd is None:
         return
