@@ -45,7 +45,7 @@ class FreeU:
 
         def output_block_patch(h, hsp, transformer_options):
             scale = scale_dict.get(h.shape[1], None)
-            if scale is not None:
+            if scale is not None and scale[0] is not None and scale[1] is not None:
                 h[:,:h.shape[1] // 2] = h[:,:h.shape[1] // 2] * scale[0]
                 if hsp.device not in on_cpu_devices:
                     try:
@@ -84,7 +84,7 @@ class FreeU_V2:
 
         def output_block_patch(h, hsp, transformer_options):
             scale = scale_dict.get(h.shape[1], None)
-            if scale is not None:
+            if scale is not None and scale[0] is not None and scale[1] is not None:
                 hidden_mean = h.mean(1).unsqueeze(1)
                 B = hidden_mean.shape[0]
                 hidden_max, _ = torch.max(hidden_mean.view(B, -1), dim=-1, keepdim=True)
