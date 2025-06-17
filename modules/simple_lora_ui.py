@@ -80,8 +80,9 @@ def generate_cards():
             'search_terms': '',
         }
         cards.append(card_tpl.format(**args))
-    html_out = '\n'.join(cards)
-    print('[LoRA UI] HTML output:', html_out[:200])
+    cards_html = '\n'.join(cards)
+    html_out = f"<div class='extra-network-pane'><div class='extra-network-cards'>{cards_html}</div></div>"
+    print('[LoRA UI] HTML output:', cards_html[:200])
     return html_out
 
 
