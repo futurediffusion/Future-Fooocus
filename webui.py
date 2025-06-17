@@ -28,6 +28,17 @@ from modules import simple_lora_ui
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
+def _parse_lora_json(data: str) -> list[tuple[str, float]]:
+    """Return list of (filename, weight) tuples from JSON string."""
+    try:
+        parsed = json.loads(data)
+        if isinstance(parsed, list):
+            return [(str(name), float(weight)) for name, weight in parsed]
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"[DEBUG] failed to parse lora selection: {e}")
+    return []
+
+
 def get_task(*args):
     args = list(args)
     args.pop(0)
@@ -37,13 +48,9 @@ def get_task(*args):
     if len(args) > lora_insert_index:
         lora_json = args.pop(lora_insert_index)
 
-    selected_loras = []
-    try:
-        selected_loras = json.loads(lora_json)
-    except Exception as e:
-        print(f"[DEBUG] failed to parse lora selection: {e}")
+    selected_loras = _parse_lora_json(lora_json)
 
-    lora_placeholders = []
+    lora_placeholders: list = []
     max_slots = modules.config.default_max_lora_number
     combined = []
     for name, weight in selected_loras:
