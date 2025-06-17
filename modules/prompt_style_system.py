@@ -109,9 +109,8 @@ class StyleDatabase:
                     prompt = row["prompt"] if "prompt" in row else row.get("text", "")
                     negative_prompt = row.get("negative_prompt", "")
                     self.styles[row["name"]] = PromptStyle(row["name"], prompt, negative_prompt, str(path))
-        except Exception:
-            import modules.errors as errors
-            errors.report(f'Error loading styles from {path}: ', exc_info=True)
+        except Exception as e:
+            print(f'Error loading styles from {path}: {e}')
 
     def get_style_paths(self) -> set:
         for style in list(self.styles.values()):

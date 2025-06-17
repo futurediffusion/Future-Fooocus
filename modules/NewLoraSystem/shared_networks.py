@@ -10,7 +10,7 @@ import network
 import torch
 from typing import Union
 
-from modules import shared, sd_models, errors, scripts
+from modules import shared, sd_models, scripts
 from backend.utils import load_torch_file
 from backend.patcher.lora import model_lora_keys_clip, model_lora_keys_unet, load_lora
 
@@ -96,7 +96,7 @@ def load_networks(names, te_multipliers=None, unet_multipliers=None, dyn_dims=No
         try:
             net = load_network(name, network_on_disk)
         except Exception as e:
-            errors.display(e, f"loading network {network_on_disk.filename}")
+            print(f"Error loading network {network_on_disk.filename}: {e}")
             continue
         net.mentioned_name = name
         network_on_disk.read_hash()
@@ -136,8 +136,8 @@ def process_network_files(names: list[str] | None = None):
             continue
         try:
             entry = network.NetworkOnDisk(name, filename)
-        except OSError:  # should catch FileNotFoundError and PermissionError etc.
-            errors.report(f"Failed to load network {name} from {filename}", exc_info=True)
+        except OSError as e:  # should catch FileNotFoundError and PermissionError etc.
+            print(f"Failed to load network {name} from {filename}: {e}")
             continue
 
         available_networks[name] = entry

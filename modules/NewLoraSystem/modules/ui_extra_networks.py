@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, Union
 from dataclasses import dataclass
 
-from modules import shared, ui_extra_networks_user_metadata, errors, extra_networks, util
+from modules import shared, ui_extra_networks_user_metadata, extra_networks, util
 from modules.images import read_info_from_image, save_image_with_geninfo
 import gradio as gr
 import json
@@ -161,7 +161,7 @@ def get_single_card(page: str = "", tabname: str = "", name: str = ""):
         item = page.create_item(name, enable_filter=False)
         page.items[name] = item
     except Exception as e:
-        errors.display(e, "creating item for extra network")
+        print(f"Error creating item for extra network: {e}")
         item = page.items.get(name)
 
     page.read_user_metadata(item, use_cache=False)

@@ -5,7 +5,7 @@ import os.path
 
 import gradio as gr
 
-from modules import infotext_utils, images, sysinfo, errors, ui_extra_networks
+from modules import infotext_utils, images, sysinfo, ui_extra_networks
 
 
 class UserMetadataEditor:
@@ -112,7 +112,7 @@ class UserMetadataEditor:
 
             return params
         except Exception as e:
-            errors.display(e, f"reading info for {name}")
+            print(f"Error reading info for {name}: {e}")
             return []
 
     def put_values_into_components(self, name):
@@ -121,7 +121,7 @@ class UserMetadataEditor:
         try:
             params = self.get_metadata_table(name)
         except Exception as e:
-            errors.display(e, f"reading metadata info for {name}")
+            print(f"Error reading metadata info for {name}: {e}")
             params = []
 
         table = '<table class="file-metadata">' + "".join(f"<tr><th>{name}</th><td>{value}</td></tr>" for name, value in params if value is not None) + '</table>'
