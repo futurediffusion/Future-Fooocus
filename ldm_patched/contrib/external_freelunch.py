@@ -6,6 +6,12 @@ import torch
 
 
 def Fourier_filter(x, threshold, scale):
+    if isinstance(scale, str):
+        try:
+            scale = float(scale)
+        except ValueError:
+            raise TypeError(f"scale must be float convertible, got {scale!r}")
+
     # FFT
     x_freq = torch.fft.fftn(x.float(), dim=(-2, -1))
     x_freq = torch.fft.fftshift(x_freq, dim=(-2, -1))
@@ -46,16 +52,18 @@ class FreeU:
         def output_block_patch(h, hsp, transformer_options):
             scale = scale_dict.get(h.shape[1], None)
             if scale is not None and scale[0] is not None and scale[1] is not None:
-                h[:,:h.shape[1] // 2] = h[:,:h.shape[1] // 2] * scale[0]
+                b_scale = float(scale[0]) if isinstance(scale[0], str) else scale[0]
+                s_scale = float(scale[1]) if isinstance(scale[1], str) else scale[1]
+                h[:,:h.shape[1] // 2] = h[:,:h.shape[1] // 2] * b_scale
                 if hsp.device not in on_cpu_devices:
                     try:
-                        hsp = Fourier_filter(hsp, threshold=1, scale=scale[1])
+                        hsp = Fourier_filter(hsp, threshold=1, scale=s_scale)
                     except:
                         print("Device", hsp.device, "does not support the torch.fft functions used in the FreeU node, switching to CPU.")
                         on_cpu_devices[hsp.device] = True
-                        hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=scale[1]).to(hsp.device)
+                        hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=s_scale).to(hsp.device)
                 else:
-                    hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=scale[1]).to(hsp.device)
+                    hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=s_scale).to(hsp.device)
 
             return h, hsp
 
@@ -91,17 +99,20 @@ class FreeU_V2:
                 hidden_min, _ = torch.min(hidden_mean.view(B, -1), dim=-1, keepdim=True)
                 hidden_mean = (hidden_mean - hidden_min.unsqueeze(2).unsqueeze(3)) / (hidden_max - hidden_min).unsqueeze(2).unsqueeze(3)
 
-                h[:,:h.shape[1] // 2] = h[:,:h.shape[1] // 2] * ((scale[0] - 1 ) * hidden_mean + 1)
+                b_scale = float(scale[0]) if isinstance(scale[0], str) else scale[0]
+                s_scale = float(scale[1]) if isinstance(scale[1], str) else scale[1]
+
+                h[:,:h.shape[1] // 2] = h[:,:h.shape[1] // 2] * ((b_scale - 1 ) * hidden_mean + 1)
 
                 if hsp.device not in on_cpu_devices:
                     try:
-                        hsp = Fourier_filter(hsp, threshold=1, scale=scale[1])
+                        hsp = Fourier_filter(hsp, threshold=1, scale=s_scale)
                     except:
                         print("Device", hsp.device, "does not support the torch.fft functions used in the FreeU node, switching to CPU.")
                         on_cpu_devices[hsp.device] = True
-                        hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=scale[1]).to(hsp.device)
+                        hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=s_scale).to(hsp.device)
                 else:
-                    hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=scale[1]).to(hsp.device)
+                    hsp = Fourier_filter(hsp.cpu(), threshold=1, scale=s_scale).to(hsp.device)
 
             return h, hsp
 
