@@ -64,7 +64,13 @@ class AsyncTask:
         self.base_model_name = args.pop()
         self.refiner_model_name = args.pop()
         self.refiner_switch = args.pop()
-        self.loras = get_enabled_loras([(bool(args.pop()), str(args.pop()), float(args.pop())) for _ in
+        def _safe_float(val: any, default: float = 0.0) -> float:
+            try:
+                return float(val)
+            except (ValueError, TypeError):
+                return default
+
+        self.loras = get_enabled_loras([(bool(args.pop()), str(args.pop()), _safe_float(args.pop())) for _ in
                                         range(default_max_lora_number)])
         self.input_image_checkbox = args.pop()
         self.current_tab = args.pop()
