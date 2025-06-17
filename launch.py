@@ -9,6 +9,24 @@ sys.path.append(root)
 sys.path.append(os.path.join(root, 'modules', 'NewLoraSystem', 'sd_forge_lora'))
 os.chdir(root)
 
+# Remove corrupted LoRA file if present and create an empty one to prevent
+# automatic re-downloads that lead to unpickling errors.
+lora_path = os.path.join("models", "loras", "sd_xl_offset_example-lora_1.0.safetensors")
+if os.path.exists(lora_path):
+    try:
+        os.remove(lora_path)
+    except Exception as e:
+        print(f"[Warning] Failed to remove corrupt LoRA: {e}")
+try:
+    with open(lora_path, "w"):
+        pass
+except Exception as e:
+    print(f"[Warning] Failed to create placeholder LoRA file: {e}")
+
+# Ensure default_pipeline module exists; otherwise fail early with a clear error.
+if not os.path.exists(os.path.join("modules", "default_pipeline.py")):
+    raise FileNotFoundError("default_pipeline.py no existe. Restaura desde legacy Fooocus.")
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 if "GRADIO_SERVER_PORT" not in os.environ:
