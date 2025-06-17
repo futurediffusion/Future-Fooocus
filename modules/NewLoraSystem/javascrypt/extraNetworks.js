@@ -207,8 +207,11 @@ var extraNetworksApplySort = {};
 var activePromptTextarea = {};
 
 function setupExtraNetworks() {
-    setupExtraNetworksForTab('txt2img');
-    setupExtraNetworksForTab('img2img');
+    ['txt2img', 'img2img'].forEach(function(tab){
+        if (gradioApp().querySelector('#' + tab + '_extra_tabs')) {
+            setupExtraNetworksForTab(tab);
+        }
+    });
 }
 
 var re_extranet = /<([^:^>]+:[^:]+):[\d.]+>(.*)/;
