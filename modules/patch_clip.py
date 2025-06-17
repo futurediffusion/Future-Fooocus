@@ -78,9 +78,10 @@ def patched_SDClipModel__init__(self, max_length=77, freeze=True, layer="last", 
     config = CLIPTextConfig.from_json_file(textmodel_json_config)
     self.num_layers = config.num_hidden_layers
 
-    with use_patched_ops(ops.manual_cast):
-        with modeling_utils.no_init_weights():
-            self.transformer = CLIPTextModel(config)
+    with torch.inference_mode(False):
+        with use_patched_ops(ops.manual_cast):
+            with modeling_utils.no_init_weights():
+                self.transformer = CLIPTextModel(config)
 
     if dtype is not None:
         self.transformer.to(dtype)
@@ -107,24 +108,32 @@ def patched_SDClipModel__init__(self, max_length=77, freeze=True, layer="last", 
 
 
 def patched_SDClipModel_forward(self, tokens):
-    backup_embeds = self.transformer.get_input_embeddings()
-    device = backup_embeds.weight.device
-    tokens = self.set_up_textual_embeddings(tokens, backup_embeds)
-    tokens = torch.LongTensor(tokens).to(device)
+    """Forward pass for SDClipModel that is compatible with inference mode."""
+    # Several functions in the CLIP transformer require tensors that track
+    # version counters. When this function is executed inside a
+    # ``torch.inference_mode()`` context the created tensors become inference
+    # tensors, leading to ``RuntimeError: Inference tensors do not track
+    # version counter``.  We temporarily disable inference mode to ensure the
+    # transformer receives normal tensors.
+    with torch.inference_mode(False):
+        backup_embeds = self.transformer.get_input_embeddings()
+        device = backup_embeds.weight.device
+        tokens = self.set_up_textual_embeddings(tokens, backup_embeds)
+        tokens = torch.LongTensor(tokens).to(device)
 
-    attention_mask = None
-    if self.enable_attention_masks:
-        attention_mask = torch.zeros_like(tokens)
-        max_token = self.transformer.get_input_embeddings().weight.shape[0] - 1
-        for x in range(attention_mask.shape[0]):
-            for y in range(attention_mask.shape[1]):
-                attention_mask[x, y] = 1
-                if tokens[x, y] == max_token:
-                    break
+        attention_mask = None
+        if self.enable_attention_masks:
+            attention_mask = torch.zeros_like(tokens)
+            max_token = self.transformer.get_input_embeddings().weight.shape[0] - 1
+            for x in range(attention_mask.shape[0]):
+                for y in range(attention_mask.shape[1]):
+                    attention_mask[x, y] = 1
+                    if tokens[x, y] == max_token:
+                        break
 
-    outputs = self.transformer(input_ids=tokens, attention_mask=attention_mask,
-                               output_hidden_states=self.layer == "hidden")
-    self.transformer.set_input_embeddings(backup_embeds)
+        outputs = self.transformer(input_ids=tokens, attention_mask=attention_mask,
+                                   output_hidden_states=self.layer == "hidden")
+        self.transformer.set_input_embeddings(backup_embeds)
 
     if self.layer == "last":
         z = outputs.last_hidden_state
