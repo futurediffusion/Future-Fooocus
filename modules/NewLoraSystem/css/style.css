@@ -1021,8 +1021,8 @@ footer {
 .extra-network-pane .card, .standalone-card-preview.card{
     display: inline-block;
     margin: 0.5rem;
-    width: 12rem;
-    height: 18rem;
+    width: 8rem;
+    height: 12rem;
     box-shadow: 0 0 5px rgba(128, 128, 128, 0.5);
     border-radius: 0.2rem;
     position: relative;
