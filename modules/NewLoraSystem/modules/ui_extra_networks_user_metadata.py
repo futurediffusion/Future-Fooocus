@@ -46,7 +46,9 @@ class UserMetadataEditor:
         pass
 
     def create_default_editor_elems(self):
-        with gr.Row():
+        # Ensure that the title/description and preview image share the same
+        # row so they stay visually aligned.
+        with gr.Row(equal_height=True):
             with gr.Column(scale=2):
                 self.edit_name = gr.HTML(elem_classes="extra-network-name")
                 self.edit_description = gr.Textbox(label="Description", lines=4)
