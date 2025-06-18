@@ -58,7 +58,8 @@ def load_lora_for_models(model, clip, lora, strength_model, strength_clip, filen
 
 @functools.lru_cache(maxsize=5)
 def load_lora_state_dict(filename):
-    if filename.endswith(".safetensors"):
+    ext = os.path.splitext(filename)[-1].lower()
+    if ext == ".safetensors":
         return load_file(filename, device="cpu")
     else:
         return torch.load(filename, map_location="cpu", weights_only=False)
