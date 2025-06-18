@@ -155,13 +155,16 @@ def save_metadata(name, description, activation, weight, notes, sd_version):
     return ''
 
 
-def save_preview(name, gallery: List, index: int):
+def save_preview(name, gallery: List, index):
     path = get_lora_path(name)
     if not path:
         return ''
     if not gallery:
         return ''
-    index = int(index)
+    try:
+        index = int(index)
+    except (TypeError, ValueError):
+        index = 0
     index = max(0, min(index, len(gallery) - 1))
     img_data = gallery[index]
     if isinstance(img_data, str):
