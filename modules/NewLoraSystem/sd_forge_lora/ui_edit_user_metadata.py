@@ -23,8 +23,22 @@ def build_tags(metadata):
     tags = {}
 
     ss_tag_frequency = metadata.get("ss_tag_frequency", {})
+
+    if isinstance(ss_tag_frequency, str):
+        try:
+            ss_tag_frequency = json.loads(ss_tag_frequency)
+        except Exception:
+            ss_tag_frequency = {}
+
     if ss_tag_frequency is not None and hasattr(ss_tag_frequency, 'items'):
         for _, tags_dict in ss_tag_frequency.items():
+            if isinstance(tags_dict, str):
+                try:
+                    tags_dict = json.loads(tags_dict)
+                except Exception:
+                    continue
+            if not hasattr(tags_dict, 'items'):
+                continue
             for tag, tag_count in tags_dict.items():
                 tag = tag.strip()
                 tags[tag] = tags.get(tag, 0) + int(tag_count)

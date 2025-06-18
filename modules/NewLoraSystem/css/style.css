@@ -1135,6 +1135,13 @@ footer {
     margin-top: 1.5em;
 }
 
+.edit-user-metadata img.preview{
+    width: 100%;
+    height: auto;
+    border-radius: 0.2rem;
+    object-fit: cover;
+}
+
 .popup-dialog {
     width: 56em;
     background: var(--body-background-fill) !important;

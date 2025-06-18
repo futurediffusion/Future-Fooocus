@@ -105,11 +105,24 @@ def build_tags(metadata: Dict) -> List[tuple[str, int]]:
     """Return list of ``(tag, count)`` sorted by frequency."""
     tags: Dict[str, int] = {}
     freq = metadata.get('ss_tag_frequency', {})
+
+    if isinstance(freq, str):
+        try:
+            freq = json.loads(freq)
+        except Exception:
+            freq = {}
+
     if hasattr(freq, 'items'):
         for _key, data in freq.items():
-            for tag, count in data.items():
-                tag = tag.strip()
-                tags[tag] = tags.get(tag, 0) + int(count)
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except Exception:
+                    continue
+            if hasattr(data, 'items'):
+                for tag, count in data.items():
+                    tag = tag.strip()
+                    tags[tag] = tags.get(tag, 0) + int(count)
 
     ordered = sorted(tags.items(), key=lambda x: x[1], reverse=True)
     return ordered
