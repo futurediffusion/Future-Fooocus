@@ -5,6 +5,7 @@ from PIL import Image
 from modules import lora_utils
 import shared
 import gradio as gr
+
 import json
 import html
 import datetime
@@ -125,15 +126,22 @@ def generate_cards():
 def load_editor(name):
     path = get_lora_path(name)
     if not path:
-        return [name, '', '', 1.0, '', 'Unknown', '', '', '']
+        return [name, '', '', 'Unknown', [], '', '', 1.0, '', '', '']
+
     metadata = read_metadata(path)
     user_meta = read_user_metadata(path)
+
     desc = user_meta.get('description', '')
     activation = user_meta.get('activation text', '')
     weight = float(user_meta.get('preferred weight', 1.0)) if user_meta.get('preferred weight') else 1.0
+    negative = user_meta.get('negative text', '')
     notes = user_meta.get('notes', '')
     sd_version = user_meta.get('sd version', 'Unknown')
-    tags = ', '.join(build_tags(metadata)[:20])
+
+    tags_list = build_tags(metadata)
+    tag_pairs = [(t, str(c)) for t, c in tags_list[:20]]
+    tags_text = ', '.join([t for t, _ in tags_list])
+
     filedata = build_filedata_table(path)
     default_preview = os.path.join(
         os.path.dirname(__file__),
@@ -148,10 +156,23 @@ def load_editor(name):
         preview = find_preview(path)
         if not preview or not os.path.exists(preview):
             preview = default_preview
-    return [name, desc, activation, weight, notes, sd_version, tags, preview, filedata]
+
+    return [
+        name,
+        desc,
+        filedata,
+        sd_version,
+        tag_pairs,
+        tags_text,
+        activation,
+        weight,
+        negative,
+        notes,
+        preview,
+    ]
 
 
-def save_metadata(name, description, activation, weight, notes, sd_version):
+def save_metadata(name, description, activation, weight, negative, notes, sd_version):
     path = get_lora_path(name)
     if not path:
         return ''
@@ -159,6 +180,7 @@ def save_metadata(name, description, activation, weight, notes, sd_version):
     data['description'] = description
     data['activation text'] = activation
     data['preferred weight'] = weight
+    data['negative text'] = negative
     data['notes'] = notes
     data['sd version'] = sd_version
     write_user_metadata(path, data)
@@ -200,17 +222,19 @@ def create_editor_ui(tabname: str, gallery, prompt):
         button_edit = gr.Button("Edit user metadata", visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_button")
         global preview_image
         with gr.Row(equal_height=True):
-            with gr.Column(scale=3, min_width=400):
+            with gr.Column(scale=7, min_width=400):
                 title = gr.HTML()
                 desc = gr.Textbox(label="Description", lines=4)
                 filedata_html = gr.HTML()
+                sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
+                taginfo = gr.HighlightedText(label='\U0001F4D0 Training dataset tags')
+                tags_text = gr.Textbox(visible=False)
+                add_tags = gr.Button('Add tags to prompt')
                 activation = gr.Textbox(label="Activation text")
                 weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
+                negative = gr.Textbox(label="Negative prompt")
                 notes = gr.TextArea(label="Notes", lines=4)
-                sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
-                tags = gr.Textbox(label='Tags', interactive=False)
-                add_tags = gr.Button('Add tags to prompt')
-            with gr.Column(scale=1, min_width=200):
+            with gr.Column(scale=3, min_width=200):
                 preview_image = gr.Image(
                     label="Preview",
                     elem_id="lora_preview_image",
@@ -226,23 +250,21 @@ def create_editor_ui(tabname: str, gallery, prompt):
 
         cancel.click(fn=None, _js="closePopup")
 
-        def add_tags_fn(t, p):
-            if not t:
-                return p
-            if p:
-                p += ', '
-            p += t
-            return p
-
-        add_tags.click(fn=add_tags_fn, inputs=[tags, prompt], outputs=prompt, show_progress=False)
+        add_tags.click(
+            fn=None,
+            _js=f"function(){addTagsToPrompt(gradioApp().querySelector('#{tags_text.elem_id} textarea').value, '{tabname}')}",
+            inputs=[],
+            outputs=[],
+            show_progress=False,
+        )
 
         button_edit.click(
             fn=load_editor,
             inputs=[name_in],
-            outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_image, filedata_html],
+            outputs=[title, desc, filedata_html, sd_version, taginfo, tags_text, activation, weight, negative, notes, preview_image],
         ).then(fn=lambda: gr.update(visible=True), inputs=[], outputs=[box])
 
-        save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
+        save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, negative, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
 
         replace_preview.click(
             fn=save_preview,
