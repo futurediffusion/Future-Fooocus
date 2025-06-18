@@ -16,6 +16,9 @@ script_path = os.path.dirname(modules_path)
 
 
 def webpath(fn):
+    if not os.path.isabs(fn):
+        fn = os.path.join(script_path, fn)
+
     if fn.startswith(script_path):
         web_path = os.path.relpath(fn, script_path).replace('\\', '/')
     else:
