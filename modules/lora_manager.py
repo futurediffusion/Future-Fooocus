@@ -101,8 +101,8 @@ def save_preview_image(path: str, image, fmt: str = 'PNG') -> None:
     image.save(preview_path, format=fmt)
 
 
-def build_tags(metadata: Dict) -> List[str]:
-    """Build an ordered tag list from metadata."""
+def build_tags(metadata: Dict) -> List[tuple[str, int]]:
+    """Return list of ``(tag, count)`` sorted by frequency."""
     tags: Dict[str, int] = {}
     freq = metadata.get('ss_tag_frequency', {})
     if hasattr(freq, 'items'):
@@ -110,6 +110,7 @@ def build_tags(metadata: Dict) -> List[str]:
             for tag, count in data.items():
                 tag = tag.strip()
                 tags[tag] = tags.get(tag, 0) + int(count)
+
     ordered = sorted(tags.items(), key=lambda x: x[1], reverse=True)
-    return [t[0] for t in ordered]
+    return ordered
 

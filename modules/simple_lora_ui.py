@@ -49,6 +49,14 @@ find_preview = lora_utils.find_preview
 build_tags = lora_utils.build_tags
 
 
+def build_preview_html(path: str) -> str:
+    """Return HTML snippet for preview image."""
+    return (
+        f"<div class='card standalone-card-preview'>"
+        f"<img src=\"file={path}\" class=\"preview\"></div>"
+    )
+
+
 def build_filedata_table(path: str) -> str:
     """Return HTML table with basic file metadata."""
     try:
@@ -157,6 +165,11 @@ def load_editor(name):
         if not preview or not os.path.exists(preview):
             preview = default_preview
 
+    preview_html = (
+        f"<div class='card standalone-card-preview'>"
+        f"<img src=\"file={preview}\" class=\"preview\"></div>"
+    )
+
     return [
         name,
         desc,
@@ -168,7 +181,7 @@ def load_editor(name):
         weight,
         negative,
         notes,
-        preview,
+        preview_html,
     ]
 
 
@@ -213,7 +226,7 @@ def save_preview(name, *_):
     preview_path = os.path.join(preview_dir, f"{name}.preview.png")
     img_data.save(preview_path)
 
-    return {preview_image: gr.Image.update(value=preview_path)}
+    return {preview_image: gr.HTML.update(value=build_preview_html(preview_path))}
 
 
 def create_editor_ui(tabname: str, gallery, prompt):
@@ -227,7 +240,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
                 desc = gr.Textbox(label="Description", lines=4)
                 filedata_html = gr.HTML()
                 sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
-                taginfo = gr.HighlightedText(label='\U0001F4D0 Training dataset tags')
+                taginfo = gr.HighlightedText(label='Training dataset tags \U0001F4D0')
                 tags_text = gr.Textbox(visible=False)
                 add_tags = gr.Button('Add tags to prompt')
                 activation = gr.Textbox(label="Activation text")
@@ -235,12 +248,8 @@ def create_editor_ui(tabname: str, gallery, prompt):
                 negative = gr.Textbox(label="Negative prompt")
                 notes = gr.TextArea(label="Notes", lines=4)
             with gr.Column(scale=3, min_width=200):
-                preview_image = gr.Image(
-                    label="Preview",
-                    elem_id="lora_preview_image",
-                    show_label=False,
-                    interactive=False,
-                    height=192
+                preview_image = gr.HTML(
+                    elem_id="lora_preview_image"
                 )
         status = gr.HTML()
         with gr.Row():
