@@ -11,6 +11,9 @@ import datetime
 from modules import util
 
 
+preview_image = None
+
+
 def pretty_bytes(num: int) -> str:
     """Return a human readable file size."""
     for unit in ["B", "KB", "MB", "GB", "TB"]:
@@ -145,8 +148,7 @@ def load_editor(name):
         preview = find_preview(path)
         if not preview or not os.path.exists(preview):
             preview = default_preview
-    preview_html = f'<img src="file={preview}" class="preview">'
-    return [name, desc, activation, weight, notes, sd_version, tags, preview_html, filedata]
+    return [name, desc, activation, weight, notes, sd_version, tags, preview, filedata]
 
 
 def save_metadata(name, description, activation, weight, notes, sd_version):
@@ -166,6 +168,8 @@ def save_metadata(name, description, activation, weight, notes, sd_version):
 def save_preview(name, *_):
     """Save the most recent Fooocus result as the preview for ``name``."""
     import modules.images_output as images_output
+
+    global preview_image
 
     path = get_lora_path(name)
     if not path:
@@ -187,23 +191,33 @@ def save_preview(name, *_):
     preview_path = os.path.join(preview_dir, f"{name}.preview.png")
     img_data.save(preview_path)
 
-    return f"Preview actualizado para {name}."
+    return {preview_image: gr.Image.update(value=preview_path)}
 
 
 def create_editor_ui(tabname: str, gallery, prompt):
     with gr.Box(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata", elem_classes="edit-user-metadata") as box:
         name_in = gr.Textbox(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_name")
         button_edit = gr.Button("Edit user metadata", visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_button")
-        title = gr.HTML()
-        desc = gr.Textbox(label="Description", lines=4)
-        filedata_html = gr.HTML()
-        activation = gr.Textbox(label="Activation text")
-        weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
-        notes = gr.TextArea(label="Notes", lines=4)
-        sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
-        tags = gr.Textbox(label='Tags', interactive=False)
-        add_tags = gr.Button('Add tags to prompt')
-        preview_html = gr.HTML()
+        global preview_image
+        with gr.Row(equal_height=True):
+            with gr.Column(scale=3, min_width=400):
+                title = gr.HTML()
+                desc = gr.Textbox(label="Description", lines=4)
+                filedata_html = gr.HTML()
+                activation = gr.Textbox(label="Activation text")
+                weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
+                notes = gr.TextArea(label="Notes", lines=4)
+                sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
+                tags = gr.Textbox(label='Tags', interactive=False)
+                add_tags = gr.Button('Add tags to prompt')
+            with gr.Column(scale=1, min_width=200):
+                preview_image = gr.Image(
+                    label="Preview",
+                    elem_id="lora_preview_image",
+                    show_label=False,
+                    interactive=False,
+                    height=192
+                )
         status = gr.HTML()
         with gr.Row():
             cancel = gr.Button('Cancel')
@@ -225,7 +239,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
         button_edit.click(
             fn=load_editor,
             inputs=[name_in],
-            outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_html, filedata_html],
+            outputs=[title, desc, activation, weight, notes, sd_version, tags, preview_image, filedata_html],
         ).then(fn=lambda: gr.update(visible=True), inputs=[], outputs=[box])
 
         save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
@@ -233,7 +247,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
         replace_preview.click(
             fn=save_preview,
             inputs=[name_in],
-            outputs=[status]
+            outputs=preview_image
         ).then(fn=None, _js='refreshLoraCards')
 
     return name_in, button_edit
