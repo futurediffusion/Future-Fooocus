@@ -252,7 +252,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
 
         add_tags.click(
             fn=None,
-            _js=f"function(){addTagsToPrompt(gradioApp().querySelector('#{tags_text.elem_id} textarea').value, '{tabname}')}",
+            _js=f"function(){{addTagsToPrompt(gradioApp().querySelector('#{tags_text.elem_id} textarea').value, '{tabname}')}}",
             inputs=[],
             outputs=[],
             show_progress=False,
