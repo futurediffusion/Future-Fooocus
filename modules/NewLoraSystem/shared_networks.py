@@ -21,16 +21,21 @@ def load_lora_for_models(model, clip, lora, strength_model, strength_clip, filen
     unet_keys = model_lora_keys_unet(model.model) if model is not None else {}
     clip_keys = model_lora_keys_clip(clip.cond_stage_model) if clip is not None else {}
 
-    lora_unmatch = lora
-    lora_unet, lora_unmatch = load_lora(lora_unmatch, unet_keys)
-    lora_clip, lora_unmatch = load_lora(lora_unmatch, clip_keys)
+    # ldm_patched.modules.lora.load_lora() returns only the dictionary of
+    # patches to apply. Previous versions of this function returned both the
+    # patches and the remaining keys, which resulted in a ``ValueError`` when
+    # trying to unpack two values here.  Instead of expecting two values, load
+    # the LoRA weights separately for UNet and CLIP.
 
-    if len(lora_unmatch) > 12:
-        print(f'[LORA] LoRA version mismatch for {model_flag}: {filename}')
-        return model, clip
+    # load_lora() will print warnings for any unused keys itself, so there is no
+    # need to keep track of ``lora_unmatch`` here.
+    lora_unet = load_lora(lora, unet_keys)
+    lora_clip = load_lora(lora, clip_keys)
 
-    if len(lora_unmatch) > 0:
-        print(f'[LORA] Loading {filename} for {model_flag} with unmatched keys {list(lora_unmatch.keys())}')
+    # The legacy implementation reported unmatched keys when the LoRA file
+    # contained parameters that did not correspond to either the UNet or the
+    # CLIP model. ``load_lora`` already logs such keys, so explicit handling is
+    # no longer required here.
 
     new_model = model.clone() if model is not None else None
     new_clip = clip.clone() if clip is not None else None
