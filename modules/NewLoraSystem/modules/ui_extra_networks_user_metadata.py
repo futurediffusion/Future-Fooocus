@@ -49,7 +49,7 @@ class UserMetadataEditor:
         # Ensure that the title/description and preview image share the same
         # row so they stay visually aligned.
         with gr.Row(equal_height=True):
-            with gr.Column(scale=2):
+            with gr.Column(scale=3):
                 self.edit_name = gr.HTML(elem_classes="extra-network-name")
                 self.edit_description = gr.Textbox(label="Description", lines=4)
                 self.html_filedata = gr.HTML()
@@ -57,7 +57,7 @@ class UserMetadataEditor:
                 self.create_extra_default_items_in_left_column()
 
             with gr.Column(scale=1, min_width=0):
-                self.html_preview = gr.HTML()
+                self.html_preview = gr.Image(value=None, interactive=False, show_label=False, height=192)
 
     def create_default_buttons(self):
 
@@ -80,10 +80,7 @@ class UserMetadataEditor:
             preview_url = self.page.find_preview(filename)
             item["preview"] = preview_url
 
-        if preview_url:
-            return f'<img src="{html.escape(preview_url)}" class="preview">'
-        else:
-            return ''
+        return preview_url or ""
 
     def relative_path(self, path):
         for parent_path in self.page.allowed_directories_for_previews():
