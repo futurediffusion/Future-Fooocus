@@ -38,15 +38,15 @@ def javascript_html():
     zoom_image_js_path = webpath('javascript/zoomimage.js')
     tag_autocomplete_js_path = webpath('javascript/tag_autocomplete.js')
     extra_networks_js_path = webpath('modules/NewLoraSystem/javascrypt/extraNetworks.js')
-    tag_dir = os.path.join(script_path, 'a1111-sd-webui-tagcomplete', 'tags')
-    tag_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('.csv')]
-    chant_files = [os.path.join('a1111-sd-webui-tagcomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
+    tag_dir = os.path.join(script_path, 'future-tagautocomplete', 'tags')
+    tag_files = [os.path.join('future-tagautocomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('.csv')]
+    chant_files = [os.path.join('future-tagautocomplete', 'tags', f) for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
     tag_files_json = json.dumps(tag_files)
     chant_files_json = json.dumps(chant_files)
     tac_cfg = json.dumps({
         'enabled': modules.config.tac_active,
-        'tagFile': os.path.join('a1111-sd-webui-tagcomplete', 'tags', modules.config.tac_tag_file),
-        'chantFile': os.path.join('a1111-sd-webui-tagcomplete', 'tags', modules.config.tac_chant_file),
+        'tagFile': os.path.join('future-tagautocomplete', 'tags', modules.config.tac_tag_file),
+        'chantFile': os.path.join('future-tagautocomplete', 'tags', modules.config.tac_chant_file),
         'maxResults': modules.config.tac_max_results,
         'appendComma': modules.config.tac_append_comma,
         'appendSpace': modules.config.tac_append_space,
