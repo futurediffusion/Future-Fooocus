@@ -79,15 +79,9 @@ class UserMetadataEditor:
             item["preview"] = preview_url
 
         if preview_url:
-            preview = f'''
-            <div class='card standalone-card-preview'>
-                <img src="{html.escape(preview_url)}" class="preview">
-            </div>
-            '''
+            return f'<img src="{html.escape(preview_url)}" class="preview">'
         else:
-            preview = "<div class='card standalone-card-preview'></div>"
-
-        return preview
+            return ''
 
     def relative_path(self, path):
         for parent_path in self.page.allowed_directories_for_previews():
