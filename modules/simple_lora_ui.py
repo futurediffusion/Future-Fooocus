@@ -79,9 +79,13 @@ def generate_cards():
     )
     for filepath in files:
         name = os.path.splitext(os.path.basename(filepath))[0]
-        preview = find_preview(filepath)
-        if not preview or not os.path.exists(preview):
-            preview = default_preview
+        preview_path = os.path.join("models", "loras_previews", f"{name}.preview.png")
+        if os.path.exists(preview_path):
+            preview = preview_path
+        else:
+            preview = find_preview(filepath)
+            if not preview or not os.path.exists(preview):
+                preview = default_preview
         preview_html = f'<img src="file={preview}" class="preview">'
         metadata = read_metadata(filepath)
         metadata_json = html.escape(json.dumps(metadata))
@@ -134,9 +138,13 @@ def load_editor(name):
         "html",
         "card-no-preview.png",
     )
-    preview = find_preview(path)
-    if not preview or not os.path.exists(preview):
-        preview = default_preview
+    preview_path = os.path.join("models", "loras_previews", f"{name}.preview.png")
+    if os.path.exists(preview_path):
+        preview = preview_path
+    else:
+        preview = find_preview(path)
+        if not preview or not os.path.exists(preview):
+            preview = default_preview
     preview_html = f'<img src="file={preview}" class="preview">'
     return [name, desc, activation, weight, notes, sd_version, tags, preview_html, filedata]
 

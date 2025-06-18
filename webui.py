@@ -970,7 +970,7 @@ with shared.gradio_root:
                 dev_mode.change(dev_mode_checked, inputs=[dev_mode], outputs=[dev_tools],
                                 queue=False, show_progress=False)
 
-                def refresh_files_clicked():
+                def refresh_files_clicked_simple():
                     modules.config.update_files()
                     modules.sd_upscale.reload_upscalers()
                     results = [gr.update(choices=modules.config.model_filenames)]
@@ -978,9 +978,6 @@ with shared.gradio_root:
                     results += [gr.update(choices=[flags.default_vae] + modules.config.vae_filenames)]
                     if not args_manager.args.disable_preset_selection:
                         results += [gr.update(choices=modules.config.available_presets)]
-                    for i in range(modules.config.default_max_lora_number):
-                        results += [gr.update(interactive=True),
-                                    gr.update(choices=['None'] + modules.config.lora_filenames), gr.update()]
                     results += [gr.update(choices=modules.sd_upscale.DEFAULT_UPSCALERS)]
                     return results
 
@@ -988,7 +985,7 @@ with shared.gradio_root:
                 if not args_manager.args.disable_preset_selection:
                     refresh_files_output += [preset_selection]
                 refresh_files_output += [sd_upscaler]
-                refresh_files.click(refresh_files_clicked, [], refresh_files_output + lora_ctrls,
+                refresh_files.click(refresh_files_clicked_simple, [], refresh_files_output,
                                     queue=False, show_progress=False)
 
         state_is_generating = gr.State(False)
