@@ -155,29 +155,31 @@ def save_metadata(name, description, activation, weight, notes, sd_version):
     return ''
 
 
-def save_preview(name, gallery: List, index):
+def save_preview(name, *_):
+    """Save the most recent Fooocus result as the preview for ``name``."""
+    import modules.images_output as images_output
+
     path = get_lora_path(name)
     if not path:
         return ''
-    if not gallery:
-        return ''
-    try:
-        index = int(index)
-    except (TypeError, ValueError):
-        index = 0
-    index = max(0, min(index, len(gallery) - 1))
-    img_data = gallery[index]
-    if isinstance(img_data, str):
-        if img_data.startswith('data:'):
-            import base64
-            img_data = Image.open(BytesIO(base64.b64decode(img_data.split(',')[1])))
-        else:
-            img_data = Image.open(img_data)
-    else:
-        img_data = Image.fromarray(img_data) if not isinstance(img_data, Image.Image) else img_data
-    preview_path = os.path.splitext(path)[0] + '.preview.png'
+
+    img_data = images_output.get_last_result_image()
+    if img_data is None:
+        raise ValueError("No se encontró imagen reciente para usar como preview.")
+
+    if not isinstance(img_data, Image.Image):
+        try:
+            img_data = Image.fromarray(img_data)
+        except Exception as e:  # pragma: no cover - image conversion failures
+            raise ValueError(f"Error al convertir la imagen: {e}")
+
+    preview_dir = os.path.join('models', 'loras_previews')
+    os.makedirs(preview_dir, exist_ok=True)
+
+    preview_path = os.path.join(preview_dir, f"{name}.preview.png")
     img_data.save(preview_path)
-    return ''
+
+    return f"Preview actualizado para {name}."
 
 
 def create_editor_ui(tabname: str, gallery, prompt):
@@ -221,9 +223,9 @@ def create_editor_ui(tabname: str, gallery, prompt):
         save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
 
         replace_preview.click(
-            fn=lambda name, g, idx: save_preview(name, g, idx),
-            _js="function(a,b){return [a,b,selected_gallery_index()]}",
-            inputs=[name_in, gallery], outputs=status
+            fn=save_preview,
+            inputs=[name_in],
+            outputs=[status]
         ).then(fn=None, _js='refreshLoraCards')
 
     return name_in, button_edit
