@@ -497,3 +497,22 @@ div:has(> #positive_prompt) {
 }
 #lightboxModal img.zoomable:active{cursor: grabbing;}
 
+# LoRA metadata preview sizing
+# Ensure consistent size and appearance for preview image
+# within the metadata editor.
+# Matches original Fooocus layout.
+#
+# Selector targets the <img> tag inside the Gradio Image component.
+
+# style for LoRA preview image
+# to keep height at 12rem and maintain aspect ratio
+# with a small shadow and rounded corners.
+
+#lora_preview_image img {
+  max-height: 12rem;
+  border-radius: 8px;
+  object-fit: contain;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.3);
+  margin-top: 0.5rem;
+}
+
