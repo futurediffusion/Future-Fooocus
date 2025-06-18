@@ -516,3 +516,21 @@ div:has(> #positive_prompt) {
   margin-top: 0.5rem;
 }
 
+/* colored tag list used in LoRA metadata editor */
+.metadata-tags {
+  margin-top: 1em;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em;
+}
+
+.metadata-tags span {
+  background: var(--button-secondary-background-fill);
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+}
+
+.gradio-highlightedtext span {
+  word-break: break-word;
+}
+
