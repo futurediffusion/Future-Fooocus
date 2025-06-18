@@ -454,9 +454,7 @@ checkpoint_downloads = get_config_item_or_set_default(
 )
 lora_downloads = get_config_item_or_set_default(
     key='lora_downloads',
-    default_value={
-        'test_lora.safetensors': 'https://drive.google.com/uc?id=1trqzwfOwy8jF9aJ31hFDtkOakdktsWQR'
-    },
+    default_value={},
     validator=lambda x: isinstance(x, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in x.items()),
     expected_type=dict
 )
