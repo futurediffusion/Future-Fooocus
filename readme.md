@@ -2,13 +2,26 @@
 <img src="https://github.com/lllyasviel/Fooocus/assets/19834515/483fb86d-c9a2-4c20-997c-46dafc124f25">
 </div>
 
-# Fooocus
+# Future-Fooocus
 
-[>>> Click Here to Install Fooocus <<<](#download)
+[>>> Click Here to Install Future-Fooocus <<<](#download)
 
-Fooocus is an image generating software (based on [Gradio](https://www.gradio.app/) <a href='https://github.com/gradio-app/gradio'><img src='https://img.shields.io/github/stars/gradio-app/gradio'></a>).
+Future-Fooocus is an image generating software based on the original [Fooocus](https://github.com/lllyasviel/Fooocus) project (and [Gradio](https://www.gradio.app/) <a href='https://github.com/gradio-app/gradio'><img src='https://img.shields.io/github/stars/gradio-app/gradio'></a>).
 
-Fooocus presents a rethinking of image generator designs. The software is offline, open source, and free, while at the same time, similar to many online image generators like Midjourney, the manual tweaking is not needed, and users only need to focus on the prompts and images. Fooocus has also simplified the installation: between pressing "download" and generating the first image, the number of needed mouse clicks is strictly limited to less than 3. Minimal GPU memory requirement is 4GB (Nvidia).
+Future-Fooocus rethinks image generator designs. The software is offline, open source, and free, while at the same time, similar to many online image generators like Midjourney, manual tweaking is not needed, and users only need to focus on the prompts and images. Future-Fooocus has also simplified the installation: between pressing "download" and generating the first image, the number of needed mouse clicks is strictly limited to less than 3. Minimal GPU memory requirement is 4GB (Nvidia).
+
+## About Future-Fooocus
+
+This repository is a special fork of Fooocus designed to be more open and flexible. Key additions include:
+
+- Components from WebUI Forge, such as the style system and extended UI elements.
+- A LoRA viewer for easier model management.
+- Prompt autocompletion and wildcard integration.
+- Ability to adjust sampling steps and choose from more aspect ratios.
+- Selection of sampler and scheduler.
+- The Ultimate SD Upscaler built in.
+- Integrated zoom on generated images for close inspection.
+- Other tweaks and improvements we may have forgotten to list.
 
 **Recently many fake websites exist on Google when you search “fooocus”. Do not trust those – here is the only official source of Fooocus.**
 
@@ -26,7 +39,7 @@ Again, recently many fake websites exist on Google when you search “fooocus”
 
 Below is a quick list using Midjourney's examples:
 
-| Midjourney | Fooocus |
+| Midjourney | Future-Fooocus |
 | - | - |
 | High-quality text-to-image without needing much prompt engineering or parameter tuning. <br> (Unknown method) | High-quality text-to-image without needing much prompt engineering or parameter tuning. <br> (Fooocus has an offline GPT-2 based prompt processing engine and lots of sampling improvements so that results are always beautiful, no matter if your prompt is as short as “house in garden” or as long as 1000 words) |
 | V1 V2 V3 V4 | Input Image -> Upscale or Variation -> Vary (Subtle) / Vary (Strong)|
@@ -47,7 +60,7 @@ Below is a quick list using Midjourney's examples:
 
 Below is a quick list using LeonardoAI's examples:
 
-| LeonardoAI | Fooocus |
+| LeonardoAI | Future-Fooocus |
 | - | - |
 | Prompt Magic | Advanced -> Style -> Fooocus V2 |
 | Advanced Sampler Parameters (like Contrast/Sharpness/etc) | Advanced -> Advanced -> Sampling Sharpness / etc |
