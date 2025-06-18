@@ -60,6 +60,11 @@
     const ESCAPE_PARENTHESES = TAC_CFG.escapeParentheses || false;
     let tags = [];
     let chants = [];
+    const parsedCSVs = {}; // cache for parsed tag CSVs
+    let tagsLoaded = false;
+    let tagsLoading = null;
+    let chantsLoaded = false;
+    let chantsLoading = null;
     let container; // suggestion container
     let selected = -1;
     let skipInput = false;
@@ -89,13 +94,15 @@
         const loaded = [];
         try {
             for(const file of TAG_FILES){
-                const resp = await fetch('file=' + file);
-                if(!resp.ok) continue;
-                const text = await resp.text();
-                text.split(/\n/).forEach(line=>{
-                    line=line.trim();
-                    if(!line) return;
-                    const p=parseCSV(line);
+                let lines = parsedCSVs[file];
+                if(!lines){
+                    const resp = await fetch('file=' + file);
+                    if(!resp.ok) continue;
+                    const text = await resp.text();
+                    lines = text.split(/\n/).map(l => l.trim()).filter(Boolean).map(parseCSV);
+                    parsedCSVs[file] = lines;
+                }
+                lines.forEach(p => {
                     if(p.length>=1){
                         const entry = {tag:p[0]};
                         if(p.length>=3){
@@ -135,6 +142,31 @@
         } catch(err){
             console.error('Failed to load chants', err);
         }
+    }
+
+    function loadTagsOnce(){
+        if(tagsLoaded) return tagsLoading || Promise.resolve();
+        if(!tagsLoading){
+            tagsLoading = loadTags().then(()=>{ tagsLoaded = true; });
+        }
+        return tagsLoading;
+    }
+
+    function loadChantsOnce(){
+        if(chantsLoaded) return chantsLoading || Promise.resolve();
+        if(!chantsLoading){
+            chantsLoading = loadChants().then(()=>{ chantsLoaded = true; });
+        }
+        return chantsLoading;
+    }
+
+    let dataLoading = null;
+    async function ensureDataLoaded(){
+        if(dataLoaded) return;
+        if(!dataLoading){
+            dataLoading = Promise.all([loadTagsOnce(), loadChantsOnce()]).then(()=>{ dataLoaded = true; });
+        }
+        await dataLoading;
     }
 
     function createContainer(area){
@@ -257,7 +289,8 @@
         selected = -1;
     }
 
-    function showSuggestions(area){
+    async function showSuggestions(area){
+        await ensureDataLoaded();
         const cursorPos = area.selectionStart;
         const text = area.value.substring(0, cursorPos);
         const fragment = text.split(/[,\n]/).pop().trim();
@@ -307,9 +340,10 @@
         if(attached.has(area)) return;
         attached.add(area);
         createContainer(area);
-        area.addEventListener('input', ()=>{
+        area.addEventListener('focus', () => { ensureDataLoaded(); }, { once: true });
+        area.addEventListener('input', async ()=>{
             if(skipInput){ skipInput=false; return; }
-            showSuggestions(area);
+            await showSuggestions(area);
         });
         area.addEventListener('keydown', (e)=>{
             if(container.style.display==='none') return;
@@ -380,18 +414,8 @@
         const positiveArea = document.querySelector('#positive_prompt textarea');
         const negativeArea = document.querySelector('#negative_prompt textarea');
         if(!positiveArea && !negativeArea) return;
-        const doAttach = () => {
-            if(positiveArea) attach(positiveArea);
-            if(negativeArea) attach(negativeArea);
-        };
-        if(!dataLoaded){
-            Promise.all([loadTags(), loadChants()]).then(()=>{
-                dataLoaded = true;
-                doAttach();
-            });
-        }else{
-            doAttach();
-        }
+        if(positiveArea) attach(positiveArea);
+        if(negativeArea) attach(negativeArea);
     }
 
     if(window.onUiLoaded){
