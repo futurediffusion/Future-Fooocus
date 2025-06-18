@@ -105,6 +105,9 @@ if args.hf_mirror is not None:
 from modules import config
 from modules.hash_cache import init_cache
 
+# Remove the SDXL offset LoRA from automatic downloads
+config.lora_downloads.pop('sd_xl_offset_example-lora_1.0.safetensors', None)
+
 os.environ["U2NET_HOME"] = config.path_inpaint
 
 os.environ['GRADIO_TEMP_DIR'] = config.temp_path
@@ -148,9 +151,6 @@ def download_models(default_model, checkpoint_downloads, embeddings_downloads, l
     for file_name, url in embeddings_downloads.items():
         load_file_from_url(url=url, model_dir=config.path_embeddings, file_name=file_name)
     for file_name, url in lora_downloads.items():
-        if file_name == 'sd_xl_offset_example-lora_1.0.safetensors':
-            print(f'Skipped download of {file_name}')
-            continue
         model_dir = os.path.dirname(get_file_from_folder_list(file_name, config.paths_loras))
         load_file_from_url(url=url, model_dir=model_dir, file_name=file_name)
     for file_name, url in vae_downloads.items():
