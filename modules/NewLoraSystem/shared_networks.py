@@ -67,7 +67,14 @@ def load_lora_state_dict(filename):
     if ext == ".safetensors":
         return load_file(filename, device="cpu")
     else:
-        return torch.load(filename, map_location="cpu", weights_only=False)
+        # PyTorch >=2.6 defaults to ``weights_only=True``. Some older LoRA files
+        # fail to load in this mode.  Attempt ``weights_only=True`` first for
+        # security, then fall back to the legacy behaviour if it fails.
+        try:
+            return torch.load(filename, map_location="cpu", weights_only=True)
+        except Exception:
+            print(f"[LoRA loader fallback] {filename} failed with weights_only=True, retrying with weights_only=False")
+            return torch.load(filename, map_location="cpu", weights_only=False)
 
 
 def load_network(name, network_on_disk):
