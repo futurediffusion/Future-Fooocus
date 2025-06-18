@@ -216,7 +216,7 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
 
         self.button_add_tags.click(
             fn=None,
-            _js=f"function(){addTagsToPrompt(gradioApp().querySelector('#{self.tags_text.elem_id} textarea').value, '{self.tabname}')}",
+            _js=f"function(){{addTagsToPrompt(gradioApp().querySelector('#{self.tags_text.elem_id} textarea').value, '{self.tabname}')}}",
             inputs=[],
             outputs=[],
             show_progress=False,
