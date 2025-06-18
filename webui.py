@@ -942,7 +942,7 @@ with shared.gradio_root:
                         freeu_ctrls = [freeu_enabled, freeu_b1, freeu_b2, freeu_s1, freeu_s2]
 
                     with gr.Tab(label='Settings'):
-                        tag_dir = os.path.join(os.path.dirname(__file__), 'a1111-sd-webui-tagcomplete', 'tags')
+                        tag_dir = os.path.join(os.path.dirname(__file__), 'future-tagautocomplete', 'tags')
                         tag_files = [f for f in os.listdir(tag_dir) if f.endswith('.csv')]
                         chant_files = [f for f in os.listdir(tag_dir) if f.endswith('-chants.json')]
                         with gr.Accordion(label='Tag Auto Complete', open=False):

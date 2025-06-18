@@ -408,7 +408,7 @@ You can also disable randomness and process a wildcard file from top to bottom b
 
 Wildcards can be nested and combined, and multiple wildcards can be used in the same prompt (example see `wildcards/color_flower.txt`).
 
-Tag Autocomplete integrates with these wildcard files. Typing `__` (double underscore) shows all available wildcard files, and choosing one lists the replacement options inside. Wildcards placed in any extension's `wildcards` folder are detected automatically. This repository provides `a1111-sd-webui-tagcomplete/wildcards` as a dedicated location for custom wildcard files.
+Tag Autocomplete integrates with these wildcard files. Typing `__` (double underscore) shows all available wildcard files, and choosing one lists the replacement options inside. Wildcards placed in any extension's `wildcards` folder are detected automatically. This repository provides `future-tagautocomplete/wildcards` as a dedicated location for custom wildcard files.
 
 ### Array Processing
 

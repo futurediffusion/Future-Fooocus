@@ -1,5 +1,5 @@
 // Simple tag autocomplete for the positive prompt textarea
-// Loads tags from all csv files in a1111-sd-webui-tagcomplete/tags and shows suggestions while typing
+// Loads tags from all csv files in future-tagautocomplete/tags and shows suggestions while typing
 
 (function(){
     // caret position helper from textarea-caret-position
@@ -46,11 +46,11 @@
     }
     const TAC_CFG = window.tac_user_config || {};
     const TAG_FILES = TAC_CFG.tagFile ? [TAC_CFG.tagFile] : ((window.tag_csv_files && Array.isArray(window.tag_csv_files)) ? window.tag_csv_files : [
-        'a1111-sd-webui-tagcomplete/tags/danbooru.csv',
-        'a1111-sd-webui-tagcomplete/tags/extra-quality-tags.csv'
+        'future-tagautocomplete/tags/danbooru.csv',
+        'future-tagautocomplete/tags/extra-quality-tags.csv'
     ]);
     const CHANT_FILES = TAC_CFG.chantFile ? [TAC_CFG.chantFile] : ((window.chant_json_files && Array.isArray(window.chant_json_files)) ? window.chant_json_files : [
-        'a1111-sd-webui-tagcomplete/tags/demo-chants.json'
+        'future-tagautocomplete/tags/demo-chants.json'
     ]);
     const MAX_RESULTS = typeof TAC_CFG.maxResults === 'number' ? TAC_CFG.maxResults : 5;
     const ENABLED = TAC_CFG.enabled !== undefined ? TAC_CFG.enabled : true;
@@ -163,7 +163,15 @@
 
     function showTagSuggestions(area, fragment){
         const lower = fragment.toLowerCase();
-        const results = tags.filter(t => t.tag.startsWith(lower));
+        const seen = new Set();
+        const results = [];
+        for(const t of tags){
+            const tagLower = t.tag.toLowerCase();
+            if((tagLower.startsWith(lower) || tagLower.includes(lower)) && !seen.has(t.tag)){
+                seen.add(t.tag);
+                results.push(t);
+            }
+        }
         if(results.length === 0){
             container.style.display = 'none';
             return;
