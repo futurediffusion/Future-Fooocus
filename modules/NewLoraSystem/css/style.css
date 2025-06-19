@@ -1690,3 +1690,22 @@ body.resizing .resize-handle {
     padding: 0.2em 0.4em;
     border-radius: 3px;
 }
+
+.metadata-tags span .tag-count {
+    margin-left: 0.3em;
+    padding: 0 0.25em;
+    background: var(--button-secondary-background-fill-hover);
+    border-radius: 2px;
+}
+
+.preview-column {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 1em;
+}
+
+.lora-metadata-panel {
+    padding: 2em !important;
+}
