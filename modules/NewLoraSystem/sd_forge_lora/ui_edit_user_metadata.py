@@ -199,20 +199,21 @@ class LoraUserMetadataEditor(ui_extra_networks_user_metadata.UserMetadataEditor)
     def create_editor(self):
         self.create_default_editor_elems()
 
-        self.taginfo = gr.HighlightedText(label="Training dataset tags")
-        self.button_add_tags = gr.Button('Use these tags in the prompt', visible=False)
-        self.tags_text = gr.Textbox(visible=False)
-        self.edit_activation_text = gr.Text(label='Activation text', info="Will be added to prompt along with Lora")
-        self.slider_preferred_weight = gr.Slider(label='Preferred weight', info="Set to 0 to disable", minimum=0.0, maximum=2.0, step=0.01)
-        self.edit_negative_text = gr.Text(label='Negative prompt', info="Will be added to negative prompts")
-        with gr.Row() as row_random_prompt:
-            with gr.Column(scale=8):
-                random_prompt = gr.Textbox(label='Random prompt', lines=4, max_lines=4, interactive=False)
+        with gr.Column():
+            self.taginfo = gr.HighlightedText(label="Training dataset tags")
+            self.button_add_tags = gr.Button('Use these tags in the prompt', visible=False)
+            self.tags_text = gr.Textbox(visible=False)
+            self.edit_activation_text = gr.Text(label='Activation text', info="Will be added to prompt along with Lora")
+            self.slider_preferred_weight = gr.Slider(label='Preferred weight', info="Set to 0 to disable", minimum=0.0, maximum=2.0, step=0.01)
+            self.edit_negative_text = gr.Text(label='Negative prompt', info="Will be added to negative prompts")
+            with gr.Row() as row_random_prompt:
+                with gr.Column(scale=8):
+                    random_prompt = gr.Textbox(label='Random prompt', lines=4, max_lines=4, interactive=False)
 
-            with gr.Column(scale=1, min_width=120):
-                generate_random_prompt = gr.Button('Generate', size="lg", scale=1)
+                with gr.Column(scale=1, min_width=120):
+                    generate_random_prompt = gr.Button('Generate', size="lg", scale=1)
 
-        self.edit_notes = gr.TextArea(label='Notes', lines=4)
+            self.edit_notes = gr.TextArea(label='Notes', lines=4)
 
         generate_random_prompt.click(fn=self.generate_random_prompt, inputs=[self.edit_name_input], outputs=[random_prompt], show_progress=False)
 
