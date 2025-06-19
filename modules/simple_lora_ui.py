@@ -75,18 +75,6 @@ def build_filedata_table(path: str) -> str:
     return table
 
 
-def build_tags_html(tag_pairs: List[tuple[str, str]]) -> str:
-    """Return HTML for colored tag pills with counts."""
-    html_parts = ["<div class='metadata-tags'>"]
-    for tag, count in tag_pairs:
-        tag = html.escape(tag)
-        html_parts.append(
-            f"<span>{tag} <span class='tag-count'>{count}</span></span>"
-        )
-    html_parts.append("</div>")
-    return "".join(html_parts)
-
-
 def generate_cards():
     card_tpl = shared.html('extra-networks-card.html')
     copy_tpl = shared.html('extra-networks-copy-path-button.html')
@@ -161,7 +149,6 @@ def load_editor(name):
     tags_list = build_tags(metadata)
     tag_pairs = [(t, str(c)) for t, c in tags_list[:20]]
     tags_text = ', '.join([t for t, _ in tags_list])
-    tags_html = build_tags_html(tag_pairs)
 
     filedata = build_filedata_table(path)
     default_preview = os.path.join(
@@ -188,12 +175,12 @@ def load_editor(name):
         desc,
         filedata,
         sd_version,
-        tags_html,
+        tag_pairs,
         tags_text,
         activation,
-        notes,
         weight,
         negative,
+        notes,
         preview_html,
     ]
 
@@ -243,7 +230,7 @@ def save_preview(name, *_):
 
 
 def create_editor_ui(tabname: str, gallery, prompt):
-    with gr.Box(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata", elem_classes="edit-user-metadata lora-metadata-panel") as box:
+    with gr.Box(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata", elem_classes="edit-user-metadata") as box:
         name_in = gr.Textbox(visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_name")
         button_edit = gr.Button("Edit user metadata", visible=False, elem_id=f"{tabname}_lora_edit_user_metadata_button")
         global preview_image
@@ -253,21 +240,21 @@ def create_editor_ui(tabname: str, gallery, prompt):
                 desc = gr.Textbox(label="Description", lines=4)
                 filedata_html = gr.HTML()
                 sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
-                taginfo = gr.HTML()
+                taginfo = gr.HighlightedText(label='Training dataset tags \U0001F4D0')
                 tags_text = gr.Textbox(visible=False)
                 add_tags = gr.Button('Add tags to prompt')
                 activation = gr.Textbox(label="Activation text")
-                notes = gr.TextArea(label="Notes", lines=4)
                 weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
                 negative = gr.Textbox(label="Negative prompt")
-            with gr.Column(scale=3, min_width=200, elem_classes="preview-column"):
+                notes = gr.TextArea(label="Notes", lines=4)
+            with gr.Column(scale=3, min_width=200):
                 preview_image = gr.HTML(
                     elem_id="lora_preview_image"
                 )
-                replace_preview = gr.Button('Replace preview', variant='primary')
         status = gr.HTML()
         with gr.Row():
             cancel = gr.Button('Cancel')
+            replace_preview = gr.Button('Replace preview', variant='primary')
             save = gr.Button('Save', variant='primary')
 
         cancel.click(fn=None, _js="closePopup")
@@ -283,7 +270,7 @@ def create_editor_ui(tabname: str, gallery, prompt):
         button_edit.click(
             fn=load_editor,
             inputs=[name_in],
-            outputs=[title, desc, filedata_html, sd_version, taginfo, tags_text, activation, notes, weight, negative, preview_image],
+            outputs=[title, desc, filedata_html, sd_version, taginfo, tags_text, activation, weight, negative, notes, preview_image],
         ).then(fn=lambda: gr.update(visible=True), inputs=[], outputs=[box])
 
         save.click(fn=save_metadata, inputs=[name_in, desc, activation, weight, negative, notes, sd_version], outputs=status).then(fn=None, _js='refreshLoraCards')
