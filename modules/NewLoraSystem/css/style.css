@@ -64,13 +64,6 @@ div.compact{
     gap: 1em;
 }
 
-.gradio-dropdown label span:not(.has-info),
-.gradio-textbox label span:not(.has-info),
-.gradio-number label span:not(.has-info)
-{
-    margin-bottom: 0;
-}
-
 .gradio-dropdown ul.options{
     z-index: 3000;
     min-width: fit-content;
@@ -96,22 +89,11 @@ div.compact{
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-.gradio-dropdown:not(.multiselect) .wrap-inner.wrap-inner.wrap-inner{
-    flex-wrap: unset;
-}
-
 .gradio-dropdown .single-select{
     white-space: nowrap;
     overflow: hidden;
 }
 
-.gradio-dropdown .token-remove.remove-all.remove-all{
-    display: none;
-}
-
-.gradio-dropdown.multiselect .token-remove.remove-all.remove-all{
-    display: flex;
-}
 
 .gradio-slider input[type="number"]{
     width: 6em;
@@ -121,11 +103,6 @@ div.compact{
     margin: 0.75em 1.5em 0 0;
 }
 
-.gradio-html div.wrap{
-    height: 100%;
-}
-div.gradio-html.min{
-    min-height: 0;
 }
 
 .block.gradio-gallery{
@@ -146,24 +123,11 @@ a{
     cursor: pointer;
 }
 
-.upload-container {
-    width: 100%;
-    max-width: 100%;
-}
-
-.layer-wrap > ul {
-    background: var(--background-fill-primary) !important;
-}
-
 /* gradio 3.39 puts a lot of overflow: hidden all over the place for an unknown reason. */
 div.gradio-container, .block.gradio-textbox, div.gradio-group, div.gradio-dropdown{
     overflow: visible !important;
 }
 
-/* align-items isn't enough and elements may overflow in Safari. */
-.unequal-height {
-    align-content: flex-start;
-}
 
 
 /* general styled components */
@@ -212,10 +176,6 @@ div.block.gradio-accordion {
     padding: 8px 8px;
 }
 
-input[type="checkbox"].input-accordion-checkbox{
-    vertical-align: sub;
-    margin-right: 0.5em;
-}
 
 
 /* txt2img/img2img specific */
@@ -254,362 +214,15 @@ input[type="checkbox"].input-accordion-checkbox{
     padding: 0.1em 0.75em;
 }
 
-[id$=_subseed_show]{
-    min-width: auto !important;
-    flex-grow: 0 !important;
-    display: flex;
-}
 
-[id$=_subseed_show] label{
-    margin-bottom: 0.65em;
-    align-self: end;
-}
 
-[id$=_seed_extras] > div{
-    gap: 0.5em;
-}
 
-.html-log .comments{
-    padding-top: 0.5em;
-}
 
-.html-log .comments:empty{
-    padding-top: 0;
-}
-
-.html-log .performance {
-    font-size: 0.85em;
-    color: #444;
-    display: flex;
-}
-
-.html-log .performance p{
-    display: inline-block;
-}
-
-.html-log .performance p.time, .performance p.vram, .performance p.profile, .performance p.time abbr, .performance p.vram abbr {
-    margin-bottom: 0;
-    color: var(--block-title-text-color);
-}
-
-.html-log .performance p.time {
-}
-
-.html-log .performance p.vram {
-    margin-left: auto;
-}
-
-.html-log .performance p.profile {
-    margin-left: 0.5em;
-}
-
-.html-log .performance .measurement{
-    color: var(--body-text-color);
-    font-weight: bold;
-}
-
-#txt2img_generate, #img2img_generate {
-    min-height: 4.5em;
-}
-
-#txt2img_generate, #img2img_generate {
-    min-height: 4.5em;
-}
-.generate-box-compact #txt2img_generate, .generate-box-compact #img2img_generate {
-    min-height: 3em;
-}
-
-@media screen and (min-width: 2500px) {
-    #txt2img_gallery, #img2img_gallery {
-        min-height: 768px;
-    }
-}
-
-.gradio-gallery .thumbnails img {
-    object-fit: scale-down !important;
-}
-#txt2img_actions_column, #img2img_actions_column {
-    gap: 0.5em;
-}
-#txt2img_tools, #img2img_tools{
-    gap: 0.4em;
-}
-
-.interrogate-col{
-    min-width: 0 !important;
-    max-width: fit-content;
-    gap: 0.5em;
-}
-.interrogate-col > button{
-    flex: 1;
-}
-
-.generate-box{
-    position: relative;
-}
-.gradio-button.generate-box-skip, .gradio-button.generate-box-interrupt, .gradio-button.generate-box-interrupting{
-    position: absolute;
-    width: 50%;
-    height: 100%;
-    display: none;
-    background: #b4c0cc;
-}
-.gradio-button.generate-box-skip:hover, .gradio-button.generate-box-interrupt:hover, .gradio-button.generate-box-interrupting:hover{
-    background: #c2cfdb;
-}
-.gradio-button.generate-box-interrupt, .gradio-button.generate-box-interrupting{
-    left: 0;
-    border-radius: 0.5rem 0 0 0.5rem;
-}
-.gradio-button.generate-box-skip{
-    right: 0;
-    border-radius: 0 0.5rem 0.5rem 0;
-}
-
-#img2img_scale_resolution_preview.block{
-    display: flex;
-    align-items: end;
-}
-
-#txtimg_hr_finalres .resolution, #img2img_scale_resolution_preview .resolution{
-    font-weight: bold;
-}
-
-#txtimg_hr_finalres div.pending, #img2img_scale_resolution_preview div.pending {
-    opacity: 1;
-    transition: opacity 0s;
-}
-
-.inactive{
-    opacity: 0.5;
-}
-
-[id$=_column_batch]{
-    min-width: min(13.5em, 100%) !important;
-}
-
-div.dimensions-tools{
-    min-width: 1.6em !important;
-    max-width: fit-content;
-    flex-direction: column;
-    place-content: center;
-}
-
-div#extras_scale_to_tab div.form{
-    flex-direction: row;
-}
-
-.image-buttons{
-    justify-content: center;
-}
-
-.infotext {
-    overflow-wrap: break-word;
-}
-
-#img2img_column_batch{
-    align-self: end;
-    margin-bottom: 0.9em;
-}
-
-#img2img_unused_scale_by_slider{
-    visibility: hidden;
-    width: 0.5em;
-    max-width: 0.5em;
-    min-width: 0.5em;
-}
-
-div.toprow-compact-stylerow{
-    margin: 0.5em 0;
-}
-
-div.toprow-compact-tools{
-    min-width: fit-content !important;
-    max-width: fit-content;
-}
-
-/* settings */
-#quicksettings {
-    --checkbox-label-padding: 6px 6px;
-    align-items: end;
-}
-
-#quicksettings > div, #quicksettings > fieldset{
-    width: fit-content;
-    flex: 0 1 fit-content;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    background: none;
-}
-
-#quicksettings > div.model_selection{
-    min-width: 24em !important;
-}
-
-#settings{
-    display: block;
-}
-
-#settings > div{
-    border: none;
-    margin-left: 10em;
-    padding: 0 var(--spacing-xl);
-}
-
-#settings > div.tab-nav{
-    float: left;
-    display: block;
-    margin-left: 0;
-    width: 10em;
-}
-
-#settings > div.tab-nav button{
-    display: block;
-    border: none;
-    text-align: left;
-    white-space: initial;
-    padding: 4px;
-}
-
-#settings > div.tab-nav .settings-category{
-    display: block;
-    margin: 1em 0 0.25em 0;
-    font-weight: bold;
-    text-decoration: underline;
-    cursor: default;
-    user-select: none;
-}
-
-#settings_result{
-    height: 1.4em;
-    margin: 0 1.2em;
-}
-
-table.popup-table{
-    background: var(--body-background-fill);
-    color: var(--body-text-color);
-    border-collapse: collapse;
-    margin: 1em;
-    border: 4px solid var(--body-background-fill);
-}
-
-table.popup-table td{
-    padding: 0.4em;
-    border: 1px solid rgba(128, 128, 128, 0.5);
-    max-width: 36em;
-}
-
-table.popup-table .muted{
-    color: #aaa;
-}
-
-table.popup-table .link{
-    text-decoration: underline;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.ui-defaults-none{
-    color: #aaa !important;
-}
-
-#settings span{
-    color: var(--body-text-color);
-}
-
-#settings .gradio-textbox, #settings .gradio-slider, #settings .gradio-number, #settings .gradio-dropdown, #settings .gradio-checkboxgroup, #settings .gradio-radio{
-    margin-top: 0.75em;
-}
-
-#settings span .settings-comment {
-    display: inline
-}
-
-.settings-comment a{
-    text-decoration: underline;
-}
-
-.settings-comment .info{
-    opacity: 0.75;
-}
-
-.settings-comment .info ol{
-    margin: 0.4em 0 0.8em 1em;
-}
-
-#sysinfo_download a.sysinfo_big_link{
-    font-size: 24pt;
-}
-
-#sysinfo_download a{
-    text-decoration: underline;
-}
-
-#sysinfo_validity{
-    font-size: 18pt;
-}
-
-#settings .settings-info{
-    max-width: 48em;
-    border: 1px dotted #777;
-    margin: 0;
-    padding: 1em;
 }
 
 
-/* live preview */
-.progressDiv{
-    position: absolute;
-    height: 20px;
-    background: #b4c0cc;
-    border-radius: 3px !important;
-    top: -14px;
-    left: 0px;
-    width: 100%;
-}
 
-.progress-container{
-    position: relative;
-}
 
-[id$=_results].mobile{
-    margin-top: 28px;
-}
-
-.dark .progressDiv{
-    background: #424c5b;
-}
-
-.progressDiv .progress{
-    width: 0%;
-    height: 20px;
-    background: #0060df;
-    color: white;
-    font-weight: bold;
-    line-height: 20px;
-    padding: 0 8px 0 0;
-    text-align: right;
-    border-radius: 3px;
-    overflow: visible;
-    white-space: nowrap;
-    padding: 0 0.5em;
-}
-
-.livePreview{
-    position: absolute;
-    z-index: 300;
-    background: var(--background-fill-primary);
-    width: 100%;
-    height: 100%;
-}
-
-.livePreview img{
-    position: absolute;
-    object-fit: contain;
-    width: 100%;
-    height: calc(100% - 60px);  /* to match gradio's height */
-}
 
 /* fullscreen popup (ie in Lora's (i) button) */
 
@@ -752,16 +365,6 @@ table.popup-table .link{
   background-color: rgba(0, 0, 0, 0.8);
 }
 
-#imageARPreview {
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    border: 2px solid red;
-    background: rgba(255, 0, 0, 0.3);
-    z-index: 900;
-    pointer-events: none;
-    display: none;
-}
 
 @media (pointer: fine) {
     .modalPrev:hover,
@@ -811,93 +414,6 @@ table.popup-table .link{
 
 /* extensions */
 
-#tab_extensions table{
-    border-collapse: collapse;
-    overflow-x: auto;
-    display: block;
-}
-
-#tab_extensions table td, #tab_extensions table th{
-    border: 1px solid #ccc;
-    padding: 0.25em 0.5em;
-}
-
-#tab_extensions table input[type="checkbox"]{
-    margin-right: 0.5em;
-    appearance: checkbox;
-}
-
-#tab_extensions button{
-    max-width: 16em;
-}
-
-#tab_extensions input[disabled="disabled"]{
-    opacity: 0.5;
-}
-
-.extension-tag{
-    font-weight: bold;
-    font-size: 95%;
-}
-
-#available_extensions .info{
-    margin: 0;
-}
-
-#available_extensions .info{
-    margin: 0.5em 0;
-    display: flex;
-    margin-top: auto;
-    opacity: 0.80;
-    font-size: 90%;
-}
-
-#available_extensions .date_added{
-    margin-right: auto;
-    display: inline-block;
-}
-
-#available_extensions .star_count{
-    margin-left: auto;
-    display: inline-block;
-}
-
-.compact-checkbox-group  div label {
-    padding: 0.1em 0.3em !important;
-}
-
-/* extensions tab table row hover highlight */
-
-#extensions tr:hover td,
-#config_state_extensions tr:hover td,
-#available_extensions tr:hover td {
-    background: rgba(0, 0, 0, 0.15);
-}
-
-.dark #extensions tr:hover td ,
-.dark #config_state_extensions tr:hover td ,
-.dark #available_extensions tr:hover td {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-/* replace original footer with ours */
-
-footer {
-    display: none !important;
-}
-
-#footer{
-    text-align: center;
-}
-
-#footer div{
-    display: inline-block;
-}
-
-#footer .versions{
-    font-size: 85%;
-    opacity: 0.85;
-}
 
 /* extra networks UI */
 
@@ -944,9 +460,6 @@ footer {
     max-width: 12em;
 }
 
-#txt2img_extra_view, #img2img_extra_view {
-    width: auto;
-}
 
 .extra-network-pane .nocards{
     margin: 1.25em 0.5em 0.5em 0.5em;
@@ -1006,9 +519,6 @@ footer {
     font-size: 2rem;
 }
 
-.extra-network-pane .card-minimal .card-button {
-    font-size: 1rem;
-}
 
 .standalone-card-preview.card .preview{
     position: absolute;
@@ -1155,48 +665,8 @@ footer {
     box-sizing: border-box;
 }
 
-div.block.input-accordion{
-
-}
-
-.input-accordion-extra{
-    flex: 0 0 auto !important;
-    margin: 0 0.5em 0 auto;
-}
-
-div.accordions > div.input-accordion{
-    min-width: fit-content !important;
-}
-
-div.accordions > div.gradio-accordion .label-wrap span{
-    white-space: nowrap;
-    margin-right: 0.25em;
-}
-
-div.accordions{
-    gap: 0.5em;
-}
-
-div.accordions > div.input-accordion.input-accordion-open{
-    flex: 1 auto;
-    flex-flow: column;
-}
 
 
-/* sticky right hand columns */
-
-#img2img_results, #txt2img_results, #extras_results {
-    position: sticky;
-    top: 0.5em;
-}
-
-body.resizing {
-    cursor: col-resize !important;
-}
-
-body.resizing * {
-    pointer-events: none !important;
-}
 
 body.resizing .resize-handle {
     pointer-events: initial !important;
