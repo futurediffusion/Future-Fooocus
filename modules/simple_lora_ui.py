@@ -240,22 +240,24 @@ def create_editor_ui(tabname: str, gallery, prompt):
                 desc = gr.Textbox(label="Description", lines=4)
                 filedata_html = gr.HTML()
                 sd_version = gr.Dropdown(['SD1', 'SD2', 'SDXL', 'Unknown'], value='Unknown', label='Stable Diffusion version')
-                taginfo = gr.HighlightedText(label='Training dataset tags \U0001F4D0')
-                tags_text = gr.Textbox(visible=False)
-                add_tags = gr.Button('Add tags to prompt')
-                activation = gr.Textbox(label="Activation text")
-                weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
-                negative = gr.Textbox(label="Negative prompt")
-                notes = gr.TextArea(label="Notes", lines=4)
             with gr.Column(scale=3, min_width=200):
                 preview_image = gr.HTML(
                     elem_id="lora_preview_image"
                 )
-        status = gr.HTML()
-        with gr.Row():
-            cancel = gr.Button('Cancel')
-            replace_preview = gr.Button('Replace preview', variant='primary')
-            save = gr.Button('Save', variant='primary')
+
+    taginfo = gr.HighlightedText(label='Training dataset tags \U0001F4D0')
+    tags_text = gr.Textbox(visible=False)
+    add_tags = gr.Button('Add tags to prompt')
+    activation = gr.Textbox(label="Activation text")
+    weight = gr.Slider(label="Preferred weight", minimum=0.0, maximum=2.0, step=0.01, value=1.0)
+    negative = gr.Textbox(label="Negative prompt")
+    notes = gr.TextArea(label="Notes", lines=4)
+    status = gr.HTML()
+
+    with gr.Row():
+        cancel = gr.Button('Cancel')
+        replace_preview = gr.Button('Replace preview', variant='primary')
+        save = gr.Button('Save', variant='primary')
 
         cancel.click(fn=None, _js="closePopup")
 
