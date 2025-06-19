@@ -1102,7 +1102,13 @@ footer {
 .edit-user-metadata {
     width: 56em;
     background: var(--body-background-fill) !important;
-    padding: 2em !important;
+    padding: 3em !important;
+    box-sizing: border-box;
+}
+
+/* give the editor elements some breathing room */
+.edit-user-metadata > * {
+    margin: 0.5em 0;
 }
 
 .edit-user-metadata .extra-network-name{
@@ -1145,7 +1151,8 @@ footer {
 .popup-dialog {
     width: 56em;
     background: var(--body-background-fill) !important;
-    padding: 2em !important;
+    padding: 3em !important;
+    box-sizing: border-box;
 }
 
 div.block.input-accordion{
