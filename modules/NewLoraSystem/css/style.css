@@ -1108,7 +1108,7 @@ footer {
 
 /* give the editor elements some breathing room */
 .edit-user-metadata > * {
-    margin: 0.5em 0;
+    margin: 4em 0;
 }
 
 .edit-user-metadata .extra-network-name{
