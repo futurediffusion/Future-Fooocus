@@ -643,8 +643,9 @@ with shared.gradio_root:
                                                        value=modules.config.default_aspect_ratio,
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
-                    custom_width = gr.Number(label='Width', value=1024)
-                    custom_height = gr.Number(label='Height', value=1024)
+                    with gr.Row():
+                        custom_width = gr.Number(label='Width', value=1024)
+                        custom_height = gr.Number(label='Height', value=1024)
 
                     aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
                                                   inputs=aspect_ratios_selection, queue=False, show_progress=False,
