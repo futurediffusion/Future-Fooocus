@@ -5,7 +5,10 @@ import pytest
 from hypothesis import assume, given
 from hypothesis import strategies as st
 
-from adetailer.opts import dynamic_denoise_strength, optimal_crop_size
+from modules.adetailer.vendor_adetailer.opts import (
+    dynamic_denoise_strength,
+    optimal_crop_size,
+)
 
 
 @pytest.mark.parametrize(

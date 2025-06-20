@@ -2,7 +2,7 @@ import pytest
 from huggingface_hub import hf_hub_download
 from PIL import Image
 
-from adetailer.ultralytics import ultralytics_predict
+from modules.adetailer.vendor_adetailer.ultralytics import ultralytics_predict
 
 
 @pytest.mark.parametrize(

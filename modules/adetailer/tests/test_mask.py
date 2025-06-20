@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from PIL import Image, ImageDraw
 
-from adetailer.mask import (
+from modules.adetailer.vendor_adetailer.mask import (
     bbox_area,
     dilate_erode,
     has_intersection,

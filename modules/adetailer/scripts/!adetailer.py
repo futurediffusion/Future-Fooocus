@@ -33,14 +33,14 @@ from aaaaaa.p_method import (
 )
 from aaaaaa.traceback import rich_traceback
 from modules.adetailer.ui import WebuiInfo, adui, ordinal, suffix
-from adetailer import (
+from ..vendor_adetailer import (
     ADETAILER,
     __version__,
     get_models,
     mediapipe_predict,
     ultralytics_predict,
 )
-from adetailer.args import (
+from ..vendor_adetailer.args import (
     BBOX_SORTBY,
     BUILTIN_SCRIPT,
     INPAINT_BBOX_MATCH_MODES,
@@ -49,8 +49,8 @@ from adetailer.args import (
     InpaintBBoxMatchMode,
     SkipImg2ImgOrig,
 )
-from adetailer.common import PredictOutput, ensure_pil_image, safe_mkdir
-from adetailer.mask import (
+from ..vendor_adetailer.common import PredictOutput, ensure_pil_image, safe_mkdir
+from ..vendor_adetailer.mask import (
     filter_by_ratio,
     filter_k_by,
     has_intersection,
@@ -58,7 +58,7 @@ from adetailer.mask import (
     mask_preprocess,
     sort_bboxes,
 )
-from adetailer.opts import dynamic_denoise_strength, optimal_crop_size
+from ..vendor_adetailer.opts import dynamic_denoise_strength, optimal_crop_size
 from controlnet_ext import (
     CNHijackRestore,
     ControlNetExt,
