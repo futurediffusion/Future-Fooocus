@@ -541,6 +541,7 @@ div:has(> #positive_prompt) {
 }
 
 /* Padding for specific input cells and dropdowns */
+
 #custom-width,
 #custom-height,
 #sampler-name,
@@ -551,20 +552,20 @@ div:has(> #positive_prompt) {
 #performance-selection,
 #base-model,
 #refiner-model {
-  padding: 8px 12px;
+  padding: 8px 12px !important;
   box-sizing: border-box;
 }
 
 #aspect-ratios-selection {
-  padding: 8px 12px;
+  padding: 8px 12px !important;
   box-sizing: border-box;
 }
 
 #aspect-ratios-accordion > summary,
 #advanced-accordion > summary,
 #preset-accordion > summary {
-  padding-left: 8px;
-  padding-top: 4px;
+  padding-left: 8px !important;
+  padding-top: 4px !important;
 }
 
 #seed-container {
