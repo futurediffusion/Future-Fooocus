@@ -1,10 +1,12 @@
 import os
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from PIL import Image
 
 from modules.model_loader import load_file_from_url
 import modules.config as config
-from modules.adetailer.adetailer import ultralytics_predict, PredictOutput
+
+if TYPE_CHECKING:  # pragma: no cover - type checking only
+    from .vendor_adetailer import PredictOutput
 
 MODEL_URLS = {
     "face_yolov8n.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8n.pt",
@@ -23,7 +25,9 @@ def ensure_model(model_name: str, url: Optional[str] = None) -> str:
     return model_path
 
 
-def detect(image: Image.Image, model_name: Optional[str] = None) -> PredictOutput:
+def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutput":
+    from .vendor_adetailer import ultralytics_predict
+
     model_name = model_name or config.default_adetailer_model
     model_path = ensure_model(model_name)
     return ultralytics_predict(model_path, image, device="cpu")

@@ -32,7 +32,7 @@ from aaaaaa.p_method import (
     need_call_process,
 )
 from aaaaaa.traceback import rich_traceback
-from aaaaaa.ui import WebuiInfo, adui, ordinal, suffix
+from modules.adetailer.ui import WebuiInfo, adui, ordinal, suffix
 from adetailer import (
     ADETAILER,
     __version__,
