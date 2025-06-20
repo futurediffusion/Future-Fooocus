@@ -2,6 +2,7 @@ import os
 import json
 import math
 import numbers
+import sys
 
 import args_manager
 import tempfile
@@ -959,9 +960,12 @@ def set_config_value(key: str, value) -> None:
     """Update ``config_dict`` and persist the change."""
     global config_dict
     if key == 'default_aspect_ratio':
-        config_dict[key] = _strip_ratio_label(value)
-    else:
-        config_dict[key] = value
+        value = _strip_ratio_label(value)
+    config_dict[key] = value
+    try:
+        setattr(sys.modules[__name__], key, value)
+    except Exception:
+        pass
     if key not in always_save_keys:
         always_save_keys.append(key)
     persist_config()
