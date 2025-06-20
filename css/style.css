@@ -160,6 +160,10 @@ div:has(> #positive_prompt) {
     flex: 0 0 100%;
 }
 
+#custom_ratio_column {
+    flex: 0 0 100%;
+}
+
 /* shape variations */
 
 .square-ratio {

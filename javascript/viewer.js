@@ -74,7 +74,11 @@ onUiLoaded(async () => {
 
     let aspectContainer = document.querySelector('.aspect_ratios');
     if (aspectContainer && !aspectContainer.querySelector('.aspect_ratios_group')) {
+        let customColumn = aspectContainer.querySelector('#custom_ratio_column');
         let labels = Array.from(aspectContainer.querySelectorAll('label'));
+        if (customColumn) {
+            labels = labels.filter(l => !customColumn.contains(l));
+        }
         aspectContainer.innerHTML = '';
         const groups = [
             {title: 'Square', count: 2, cls: 'square-ratio'},
@@ -113,6 +117,9 @@ onUiLoaded(async () => {
             }
             aspectContainer.appendChild(grp);
         });
+        if (customColumn) {
+            aspectContainer.appendChild(customColumn);
+        }
     }
 
     let styleSelections = document.querySelector('.style_selections');
