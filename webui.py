@@ -643,13 +643,25 @@ with shared.gradio_root:
                                                        value=modules.config.default_aspect_ratio,
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
-                    custom_width = gr.Number(label='Width', value=1024)
-                    custom_height = gr.Number(label='Height', value=1024)
 
-                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
-                                                  inputs=aspect_ratios_selection, queue=False, show_progress=False,
+                    with gr.Row(visible=False, elem_id='custom_size_row') as custom_size_row:
+                        custom_width = gr.Number(label='Width', value=1024)
+                        custom_height = gr.Number(label='Height', value=1024)
+
+                    def aspect_ratio_changed(val):
+                        modules.config.set_config_value('default_aspect_ratio', val)
+                        return gr.update(visible=val.lower().startswith('custom'))
+
+                    aspect_ratios_selection.change(aspect_ratio_changed,
+                                                  inputs=aspect_ratios_selection,
+                                                  outputs=custom_size_row,
+                                                  queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+
+                    shared.gradio_root.load(lambda x: gr.update(visible=x.lower().startswith('custom')),
+                                           inputs=aspect_ratios_selection,
+                                           outputs=custom_size_row,
+                                           queue=False, show_progress=False)
 
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
                 sd_upscale_checkbox.change(
