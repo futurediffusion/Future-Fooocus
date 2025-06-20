@@ -2,6 +2,9 @@ import os
 from typing import TYPE_CHECKING, Optional
 
 from PIL import Image
+import numpy as np
+
+from .vendor_adetailer.common import ensure_pil_image
 
 from modules import config
 from modules.model_loader import load_file_from_url
@@ -44,6 +47,7 @@ def ensure_model(model_name: str, url: Optional[str] = None) -> str:
 def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutput":
     from .vendor_adetailer import mediapipe_predict, ultralytics_predict
 
+    image = ensure_pil_image(image, "RGB")
     model_name = model_name or config.default_adetailer_model
     if model_name.startswith("mediapipe_"):
         # mediapipe models are builtin, no download required
@@ -59,6 +63,14 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     num_masks = len(result.masks)
     prefix = f"Tab {tab_idx}: " if tab_idx is not None else ""
     print(f"[Adetailer] {prefix}{num_masks} masks detected using {model_name}")
+    debug_dir = os.getenv("ADETAILER_DEBUG")
+    if debug_dir:
+        os.makedirs(debug_dir, exist_ok=True)
+        if result.preview is not None:
+            preview_path = os.path.join(debug_dir, f"preview_{tab_idx or 0}.png")
+            result.preview.save(preview_path)
+        for j, m in enumerate(result.masks):
+            m.save(os.path.join(debug_dir, f"mask_{tab_idx or 0}_{j}.png"))
     if num_masks:
         from PIL import ImageFilter
 
@@ -69,11 +81,15 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     return image
 
 
-def apply_adetailer_multi(image: Image.Image, params: Optional[dict] = None) -> Image.Image:
+def apply_adetailer_multi(image: Image.Image | np.ndarray, params: Optional[dict] = None) -> Image.Image | np.ndarray:
     """Apply ADetailer for all enabled tabs."""
     if not config.default_adetailer_enable:
         print("[ADetailer] disabled. skipping")
         return image
+
+    return_np = not isinstance(image, Image.Image)
+    pil_img = ensure_pil_image(image)
+
     try:
         enabled_tabs = [
             str(i)
@@ -88,12 +104,14 @@ def apply_adetailer_multi(image: Image.Image, params: Optional[dict] = None) -> 
         print(f"[Adetailer] Using model: {config.default_adetailer_model}")
 
         for i in map(int, enabled_tabs):
-            _apply_adetailer_single(image, config.default_adetailer_model, tab_idx=i)
+            pil_img = _apply_adetailer_single(pil_img, config.default_adetailer_model, tab_idx=i)
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
-    return image
+    if return_np:
+        return np.array(pil_img)
+    return pil_img
 
 
 # Backwards compatibility
-def apply_adetailer(image: Image.Image) -> Image.Image:
+def apply_adetailer(image: Image.Image | np.ndarray) -> Image.Image | np.ndarray:
     return apply_adetailer_multi(image)
