@@ -139,6 +139,7 @@ div:has(> #positive_prompt) {
     width: 100%;
     font-weight: bold;
     margin-bottom: 2px;
+    padding-left: 6px;
 }
 
 /* Hide internal file component used for downloading the last image */
