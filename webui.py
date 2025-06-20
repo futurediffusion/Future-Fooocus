@@ -43,7 +43,7 @@ def get_task(*args):
     args = list(args)
     args.pop(0)
 
-    lora_insert_index = 16  # after base_model, refiner_model, refiner_switch
+    lora_insert_index = 18  # after base_model, refiner_model, refiner_switch
     lora_json = "[]"
     if len(args) > lora_insert_index:
         lora_json = args.pop(lora_insert_index)
@@ -638,15 +638,29 @@ with shared.gradio_root:
                                              value=modules.config.default_prompt_negative)
 
                 with gr.Accordion(label='Aspect Ratios', open=False):
+                    aspect_ratio_choices = modules.config.available_aspect_ratios_labels + ['Custom']
                     aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
-                                                       choices=modules.config.available_aspect_ratios_labels,
+                                                       choices=aspect_ratio_choices,
                                                        value=modules.config.default_aspect_ratio,
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
 
-                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
-                                                  inputs=aspect_ratios_selection, queue=False, show_progress=False,
+                    with gr.Column(visible=False, elem_id='custom_ratio_column') as custom_ratio_column:
+                        custom_width = gr.Number(label='Width', value=1024, minimum=64, maximum=2048, step=8)
+                        custom_height = gr.Number(label='Height', value=1024, minimum=64, maximum=2048, step=8)
+
+                    def _on_ratio_change(val):
+                        if val != 'Custom':
+                            modules.config.set_config_value('default_aspect_ratio', val)
+                            return gr.update(visible=False)
+                        return gr.update(visible=True)
+
+                    aspect_ratios_selection.change(_on_ratio_change,
+                                                  inputs=aspect_ratios_selection,
+                                                  outputs=custom_ratio_column,
+                                                  queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
+
                     shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
@@ -1079,7 +1093,8 @@ with shared.gradio_root:
         ctrls = [currentTask, generate_image_grid]
         ctrls += [
             prompt, negative_prompt, style_selections, csv_style,
-            performance_selection, aspect_ratios_selection, image_number, output_format, seed_actual,
+            performance_selection, aspect_ratios_selection, custom_width, custom_height,
+            image_number, output_format, seed_actual,
             read_wildcards_in_order, sharpness, guidance_scale
         ]
 

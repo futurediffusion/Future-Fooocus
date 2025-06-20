@@ -156,6 +156,10 @@ div:has(> #positive_prompt) {
     min-height: 20px;
 }
 
+.aspect_ratios_group label.custom_ratio_label {
+    flex: 0 0 100%;
+}
+
 /* shape variations */
 
 .square-ratio {
