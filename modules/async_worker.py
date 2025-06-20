@@ -399,8 +399,9 @@ def worker():
         del positive_cond, negative_cond  # Save memory
         if inpaint_worker.current_task is not None:
             imgs = [inpaint_worker.current_task.post_process(x) for x in imgs]
-        from modules.adetailer.adetailer import apply_adetailer
-        imgs = [apply_adetailer(x) for x in imgs]
+        from modules.adetailer.adetailer import apply_adetailer_multi
+        if modules.config.default_adetailer_enable:
+            imgs = [apply_adetailer_multi(x) for x in imgs]
         current_progress = int(base_progress + (100 - preparation_steps) / float(all_steps) * steps)
         if modules.config.default_black_out_nsfw or async_task.black_out_nsfw:
             progressbar(async_task, current_progress, 'Checking for NSFW content ...')

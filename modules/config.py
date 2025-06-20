@@ -435,6 +435,30 @@ default_adetailer_model = get_config_item_or_set_default(
     validator=lambda x: isinstance(x, str),
     expected_type=str
 )
+default_adetailer_tab1_enable = get_config_item_or_set_default(
+    key='default_adetailer_tab1_enable',
+    default_value=True,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
+default_adetailer_tab2_enable = get_config_item_or_set_default(
+    key='default_adetailer_tab2_enable',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
+default_adetailer_tab3_enable = get_config_item_or_set_default(
+    key='default_adetailer_tab3_enable',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
+default_adetailer_tab4_enable = get_config_item_or_set_default(
+    key='default_adetailer_tab4_enable',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
 default_image_prompt_advanced_checkbox = get_config_item_or_set_default(
     key='default_image_prompt_advanced_checkbox',
     default_value=False,
@@ -842,6 +866,10 @@ possible_preset_keys = {
     "default_inpaint_engine_version": "inpaint_engine_version",
     "default_adetailer_enable": "adetailer_enable",
     "default_adetailer_model": "adetailer_model",
+    "default_adetailer_tab1_enable": "adetailer_tab1_enable",
+    "default_adetailer_tab2_enable": "adetailer_tab2_enable",
+    "default_adetailer_tab3_enable": "adetailer_tab3_enable",
+    "default_adetailer_tab4_enable": "adetailer_tab4_enable",
 }
 
 REWRITE_PRESET = False
