@@ -21,6 +21,7 @@ This repository is a special fork of Fooocus designed to be more open and flexib
 - Selection of sampler and scheduler.
 - The Ultimate SD Upscaler built in.
 - Integrated zoom on generated images for close inspection.
+- ADetailer post-processing for faces and bodies with automatic model download (stored in `models/detection/adetailer`).
 - Other tweaks and improvements we may have forgotten to list.
 
 **Recently many fake websites exist on Google when you search “fooocus”. Do not trust those – here is the only official source of Fooocus.**
@@ -446,6 +447,10 @@ Applies a LoRA to the prompt. The LoRA file must be located in the `models/loras
 ## Advanced Features
 
 [Click here to browse the advanced features.](https://github.com/lllyasviel/Fooocus/discussions/117)
+
+## ADetailer Integration
+
+Future-Fooocus can automatically enhance faces and bodies using ADetailer. Detection models are downloaded on demand and stored in `models/detection/adetailer`.
 
 ## Forks
 
