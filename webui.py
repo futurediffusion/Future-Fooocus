@@ -26,6 +26,7 @@ from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 from modules import simple_lora_ui
 from modules.adetailer import adetailer as adetailer_module
+from modules.adetailer.ui import adui, WebuiInfo
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
@@ -710,25 +711,16 @@ with shared.gradio_root:
                                                      elem_id='performance-selection')
 
                 with gr.Accordion(label='Adetailer', open=False, elem_id='adetailer-accordion'):
-                    adetailer_enable = gr.Checkbox(label='Enable ADetailer',
-                                                  value=modules.config.default_adetailer_enable,
-                                                  elem_id='adetailer-enable')
-                    with gr.Group(visible=modules.config.default_adetailer_enable) as adetailer_group:
-                        adetailer_model = gr.Dropdown(label='ADetailer Model',
-                                                     choices=list(adetailer_module.MODEL_URLS.keys()),
-                                                     value=modules.config.default_adetailer_model)
-                        with gr.Tabs():
-                            with gr.Tab('Face'):
-                                ad_face_conf = gr.Slider(label='Face Confidence', minimum=0.0, maximum=1.0, step=0.01, value=0.3)
-                            with gr.Tab('Body'):
-                                ad_body_conf = gr.Slider(label='Body Confidence', minimum=0.0, maximum=1.0, step=0.01, value=0.3)
-
-                    adetailer_enable.change(lambda x: gr.update(visible=x), inputs=adetailer_enable,
-                                            outputs=adetailer_group, queue=False, show_progress=False)
-                    adetailer_enable.change(lambda x: modules.config.set_config_value('default_adetailer_enable', x),
-                                            inputs=adetailer_enable, queue=False, show_progress=False)
-                    adetailer_model.change(lambda x: modules.config.set_config_value('default_adetailer_model', x),
-                                           inputs=adetailer_model, queue=False, show_progress=False)
+                    webui_info = WebuiInfo(
+                        ad_model_list=list(adetailer_module.MODEL_URLS.keys()),
+                        sampler_names=[],
+                        scheduler_names=[],
+                        t2i_button=generate_button,
+                        i2i_button=generate_button,
+                        checkpoints_list=[],
+                        vae_list=[],
+                    )
+                    ad_components, _ = adui(4, False, webui_info)
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
