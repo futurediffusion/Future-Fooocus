@@ -132,4 +132,17 @@ onUiLoaded(async () => {
     inputs.forEach(function (input) {
         input.style.marginTop = '12px';
     });
+
+    // place custom width and height fields next to the Custom ratio option
+    const customLabel = document.querySelector('.aspect_ratios label.custom_ratio_label');
+    const widthElem = document.getElementById('custom-width');
+    const heightElem = document.getElementById('custom-height');
+    if (customLabel && widthElem && heightElem) {
+        const parent = customLabel.parentElement;
+        const container = document.createElement('div');
+        container.id = 'custom-size-fields';
+        container.appendChild(widthElem);
+        container.appendChild(heightElem);
+        parent.insertBefore(container, customLabel.nextSibling);
+    }
 });
