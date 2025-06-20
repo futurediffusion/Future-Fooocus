@@ -426,13 +426,13 @@ default_developer_debug_mode_checkbox = get_config_item_or_set_default(
 )
 default_adetailer_enable = get_config_item_or_set_default(
     key='default_adetailer_enable',
-    default_value=False,
+    default_value=True,
     validator=lambda x: isinstance(x, bool),
     expected_type=bool
 )
 default_adetailer_model = get_config_item_or_set_default(
     key='default_adetailer_model',
-    default_value='face_yolov8n.pt',
+    default_value='mediapipe_face_mesh',
     validator=lambda x: isinstance(x, str),
     expected_type=str
 )
@@ -450,7 +450,7 @@ default_adetailer_tab2_enable = get_config_item_or_set_default(
 )
 default_adetailer_tab3_enable = get_config_item_or_set_default(
     key='default_adetailer_tab3_enable',
-    default_value=False,
+    default_value=True,
     validator=lambda x: isinstance(x, bool),
     expected_type=bool
 )

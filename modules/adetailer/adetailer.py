@@ -58,14 +58,14 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     result = detect(image, model_name)
     num_masks = len(result.masks)
     prefix = f"Tab {tab_idx}: " if tab_idx is not None else ""
-    print(f"[ADetailer] {prefix}{num_masks} masks detected using {model_name}")
+    print(f"[Adetailer] {prefix}{num_masks} masks detected using {model_name}")
     if num_masks:
         from PIL import ImageFilter
 
         for idx, mask in enumerate(result.masks, 1):
             blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
             image.paste(blurred, mask=mask)
-            print(f"[ADetailer] {prefix}Applied mask {idx}/{num_masks}")
+        print(f"[Adetailer] Applied {num_masks} masks on tab {tab_idx}")
     return image
 
 
@@ -75,13 +75,20 @@ def apply_adetailer_multi(image: Image.Image, params: Optional[dict] = None) -> 
         print("[ADetailer] disabled. skipping")
         return image
     try:
-        any_enabled = False
-        for i in range(1, TAB_COUNT + 1):
-            if getattr(config, f"default_adetailer_tab{i}_enable", False):
-                any_enabled = True
-                _apply_adetailer_single(image, config.default_adetailer_model, tab_idx=i)
-        if not any_enabled:
-            print("[ADetailer] no tabs enabled. skipping")
+        enabled_tabs = [
+            str(i)
+            for i in range(1, TAB_COUNT + 1)
+            if getattr(config, f"default_adetailer_tab{i}_enable", False)
+        ]
+        if not enabled_tabs:
+            print("[Adetailer] no tabs enabled. skipping")
+            return image
+
+        print(f"[Adetailer] Enabled tabs: {', '.join(enabled_tabs)}")
+        print(f"[Adetailer] Using model: {config.default_adetailer_model}")
+
+        for i in map(int, enabled_tabs):
+            _apply_adetailer_single(image, config.default_adetailer_model, tab_idx=i)
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
     return image
