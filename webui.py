@@ -714,9 +714,17 @@ with shared.gradio_root:
                                                   value=modules.config.default_adetailer_enable,
                                                   elem_id='adetailer-enable')
                     with gr.Group(visible=modules.config.default_adetailer_enable) as adetailer_group:
-                        adetailer_model = gr.Dropdown(label='ADetailer Model',
-                                                     choices=list(adetailer_module.MODEL_URLS.keys()),
-                                                     value=modules.config.default_adetailer_model)
+                        ad_model_choices = list(adetailer_module.MODEL_URLS.keys()) + [
+                            "mediapipe_face_full",
+                            "mediapipe_face_short",
+                            "mediapipe_face_mesh",
+                            "mediapipe_face_mesh_eyes_only",
+                        ]
+                        adetailer_model = gr.Dropdown(
+                            label='ADetailer Model',
+                            choices=ad_model_choices,
+                            value=modules.config.default_adetailer_model
+                        )
                         ad_tab1 = gr.Checkbox(label='Enable Tab 1', value=modules.config.default_adetailer_tab1_enable)
                         ad_tab2 = gr.Checkbox(label='Enable Tab 2', value=modules.config.default_adetailer_tab2_enable)
                         ad_tab3 = gr.Checkbox(label='Enable Tab 3', value=modules.config.default_adetailer_tab3_enable)
