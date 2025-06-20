@@ -5,7 +5,25 @@ from typing import TYPE_CHECKING
 
 import cv2
 from PIL import Image
-from torchvision.transforms.functional import to_pil_image
+try:  # pragma: no cover - optional dependency
+    from torchvision.transforms.functional import to_pil_image
+except Exception:  # pragma: no cover - best effort fallback
+    import numpy as np
+    from PIL import Image as _Image
+
+    def to_pil_image(tensor, mode=None):
+        if hasattr(tensor, "detach"):
+            tensor = tensor.detach().cpu()
+        if hasattr(tensor, "numpy"):
+            tensor = tensor.numpy()
+        if isinstance(tensor, np.ndarray):
+            if tensor.ndim == 3 and tensor.shape[0] in (1, 3):
+                tensor = tensor.transpose(1, 2, 0)
+            if tensor.dtype != np.uint8:
+                tensor = (tensor * 255 if tensor.max() <= 1 else tensor).clip(0, 255).astype(np.uint8)
+        else:
+            tensor = np.asarray(tensor)
+        return _Image.fromarray(tensor, mode=mode)
 
 from . import PredictOutput
 from .common import create_mask_from_bbox
