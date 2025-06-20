@@ -15,7 +15,6 @@ import modules.gradio_hijack as grh
 from modules import styles
 import modules.meta_parser
 import args_manager
-import copy
 import modules.sd_upscale
 from modules import ui_common
 import launch
@@ -1161,6 +1160,7 @@ with shared.gradio_root:
                   enhance_input_image, enhance_checkbox, enhance_uov_method, enhance_uov_processing_order,
                   enhance_uov_prompt_type]
         ctrls += enhance_ctrls
+        ctrls += [adetailer_enable]
 
         def parse_meta(raw_prompt_txt, is_generating):
             loaded_json = None

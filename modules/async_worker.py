@@ -231,6 +231,8 @@ class AsyncTask:
         self.should_enhance = self.enhance_checkbox and (self.enhance_uov_method != disabled.casefold() or len(self.enhance_ctrls) > 0)
         self.images_to_enhance_count = 0
         self.enhance_stats = {}
+        self.enable_adetailer = args.pop()
+        self.params = {"enable_adetailer": self.enable_adetailer}
 
 async_tasks = []
 
@@ -242,7 +244,6 @@ class EarlyReturnException(BaseException):
 def worker():
     global async_tasks
 
-    import os
     import traceback
     import math
     import numpy as np
@@ -281,11 +282,9 @@ def worker():
         erode_or_dilate,
         parse_lora_references_from_prompt,
         apply_wildcards,
-        parse_resolution_label,
     )
     from modules.upscaler import perform_upscale
     from modules.flags import Performance
-    from modules.meta_parser import get_metadata_parser
 
     pid = os.getpid()
     print(f'Started worker with PID {pid}')
@@ -400,8 +399,8 @@ def worker():
         if inpaint_worker.current_task is not None:
             imgs = [inpaint_worker.current_task.post_process(x) for x in imgs]
         from modules.adetailer.adetailer import apply_adetailer_multi
-        if modules.config.default_adetailer_enable:
-            imgs = [apply_adetailer_multi(x) for x in imgs]
+        if async_task.params.get("enable_adetailer", False):
+            imgs = [apply_adetailer_multi(x, async_task.params) for x in imgs]
         current_progress = int(base_progress + (100 - preparation_steps) / float(all_steps) * steps)
         if modules.config.default_black_out_nsfw or async_task.black_out_nsfw:
             progressbar(async_task, current_progress, 'Checking for NSFW content ...')
@@ -544,10 +543,10 @@ def worker():
             denoising_strength = async_task.overwrite_vary_strength
         shape_ceil = get_image_shape_ceil(uov_input_image)
         if shape_ceil < 1024:
-            print(f'[Vary] Image is resized because it is too small.')
+            print('[Vary] Image is resized because it is too small.')
             shape_ceil = 1024
         elif shape_ceil > 2048:
-            print(f'[Vary] Image is resized because it is too big.')
+            print('[Vary] Image is resized because it is too big.')
             shape_ceil = 2048
         uov_input_image = set_image_shape_ceil(uov_input_image, shape_ceil)
         initial_pixels = core.numpy_to_pytorch(uov_input_image)
@@ -667,7 +666,7 @@ def worker():
             current_progress += 1
         progressbar(async_task, current_progress, f'Upscaling image from {str((W, H))} ...')
         uov_input_image = perform_upscale(uov_input_image)
-        print(f'Image upscaled.')
+        print('Image upscaled.')
         if async_task.sd_upscale_checkbox:
             pil_img = Image.fromarray(uov_input_image)
 
@@ -697,7 +696,7 @@ def worker():
             f = 1.0
         shape_ceil = get_shape_ceil(H * f, W * f)
         if shape_ceil < 1024:
-            print(f'[Upscale] Image is resized because it is too small.')
+            print('[Upscale] Image is resized because it is too small.')
             uov_input_image = set_image_shape_ceil(uov_input_image, 1024)
             shape_ceil = 1024
         else:
@@ -869,7 +868,7 @@ def worker():
         return tasks, use_expansion, loras, current_progress
 
     def apply_freeu(async_task):
-        print(f'FreeU is enabled!')
+        print('FreeU is enabled!')
         pipeline.final_unet = core.apply_freeu(
             pipeline.final_unet,
             async_task.freeu_b1,
@@ -910,7 +909,7 @@ def worker():
         progressbar(async_task, current_progress, 'Downloading Hyper-SD components ...')
         async_task.performance_loras += [(modules.config.downloading_sdxl_hyper_sd_lora(), 0.8)]
         if async_task.refiner_model_name != 'None':
-            print(f'Refiner disabled in Hyper-SD mode.')
+            print('Refiner disabled in Hyper-SD mode.')
         async_task.refiner_model_name = 'None'
         async_task.sampler_name = 'dpmpp_sde_gpu'
         async_task.scheduler_name = 'karras'
@@ -930,7 +929,7 @@ def worker():
         progressbar(async_task, 1, 'Downloading Lightning components ...')
         async_task.performance_loras += [(modules.config.downloading_sdxl_lightning_lora(), 1.0)]
         if async_task.refiner_model_name != 'None':
-            print(f'Refiner disabled in Lightning mode.')
+            print('Refiner disabled in Lightning mode.')
         async_task.refiner_model_name = 'None'
         async_task.sampler_name = 'euler'
         async_task.scheduler_name = 'sgm_uniform'
@@ -950,7 +949,7 @@ def worker():
         progressbar(async_task, 1, 'Downloading LCM components ...')
         async_task.performance_loras += [(modules.config.downloading_sdxl_lcm_lora(), 1.0)]
         if async_task.refiner_model_name != 'None':
-            print(f'Refiner disabled in LCM mode.')
+            print('Refiner disabled in LCM mode.')
         async_task.refiner_model_name = 'None'
         async_task.sampler_name = 'lcm'
         async_task.scheduler_name = 'lcm'
@@ -1050,7 +1049,7 @@ def worker():
                         async_task.refiner_switch = 0.8
                 else:
                     inpaint_head_model_path, inpaint_patch_model_path = None, None
-                    print(f'[Inpaint] Parameterized inpaint is disabled.')
+                    print('[Inpaint] Parameterized inpaint is disabled.')
                 if async_task.inpaint_additional_prompt != '':
                     if async_task.prompt == '':
                         async_task.prompt = async_task.inpaint_additional_prompt
@@ -1231,7 +1230,7 @@ def worker():
         use_style = len(async_task.style_selections) > 0
 
         if async_task.base_model_name == async_task.refiner_model_name:
-            print(f'Refiner disabled because base model and refiner are same.')
+            print('Refiner disabled because base model and refiner are same.')
             async_task.refiner_model_name = 'None'
 
         current_progress = 0
@@ -1476,7 +1475,7 @@ def worker():
             print(f'Generating and saving time: {execution_time:.2f} seconds')
 
         if not async_task.should_enhance:
-            print(f'[Enhance] Skipping, preconditions aren\'t met')
+            print('[Enhance] Skipping, preconditions aren\'t met')
             stop_processing(async_task, processing_start_time)
             return
 

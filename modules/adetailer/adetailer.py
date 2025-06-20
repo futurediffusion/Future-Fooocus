@@ -1,9 +1,10 @@
 import os
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
 from PIL import Image
 
+from modules import config
 from modules.model_loader import load_file_from_url
-import modules.config as config
 
 if TYPE_CHECKING:  # pragma: no cover - type checking only
     from .vendor_adetailer import PredictOutput
@@ -41,7 +42,7 @@ def ensure_model(model_name: str, url: Optional[str] = None) -> str:
 
 
 def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutput":
-    from .vendor_adetailer import ultralytics_predict, mediapipe_predict
+    from .vendor_adetailer import mediapipe_predict, ultralytics_predict
 
     model_name = model_name or config.default_adetailer_model
     if model_name.startswith("mediapipe_"):
@@ -68,7 +69,7 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     return image
 
 
-def apply_adetailer_multi(image: Image.Image) -> Image.Image:
+def apply_adetailer_multi(image: Image.Image, params: Optional[dict] = None) -> Image.Image:
     """Apply ADetailer for all enabled tabs."""
     if not config.default_adetailer_enable:
         print("[ADetailer] disabled. skipping")
