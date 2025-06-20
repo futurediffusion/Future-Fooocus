@@ -538,13 +538,3 @@ div:has(> #positive_prompt) {
   word-break: break-word;
 }
 
-/* arrange custom width and height next to Custom option */
-#custom-size-fields {
-  display: flex;
-  gap: 8px;
-  padding: 4px 0;
-}
-#custom-size-fields > div {
-  flex: 1;
-}
-
