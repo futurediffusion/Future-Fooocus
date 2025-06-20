@@ -638,16 +638,60 @@ with shared.gradio_root:
                                              value=modules.config.default_prompt_negative)
 
                 with gr.Accordion(label='Aspect Ratios', open=False):
-                    aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
-                                                       choices=modules.config.available_aspect_ratios_labels,
-                                                       value=modules.config.default_aspect_ratio,
-                                                       info='width × height',
-                                                       elem_classes='aspect_ratios')
+                    aspect_ratio_radio = gr.Radio(label='Aspect Ratios', show_label=False,
+                                                  choices=modules.config.available_aspect_ratios_labels,
+                                                  value=modules.config.default_aspect_ratio,
+                                                  info='width × height',
+                                                  elem_classes='aspect_ratios')
 
-                    aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
-                                                  inputs=aspect_ratios_selection, queue=False, show_progress=False,
-                                                  _js='(x)=>{refresh_aspect_ratios_label(x);}')
-                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratios_selection, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+                    custom_ratio_checkbox = gr.Checkbox(label='Custom', value=False)
+                    with gr.Row(visible=False) as custom_ratio_row:
+                        custom_width = gr.Number(label='Width', precision=0, value=1024)
+                        custom_height = gr.Number(label='Height', precision=0, value=1024)
+
+                    aspect_ratios_selection = gr.State(modules.config.default_aspect_ratio)
+
+                    def set_default_ratio(x):
+                        modules.config.set_config_value('default_aspect_ratio', x)
+                        return x
+
+                    aspect_ratio_radio.change(set_default_ratio,
+                                              inputs=aspect_ratio_radio,
+                                              outputs=aspect_ratios_selection,
+                                              queue=False, show_progress=False,
+                                              _js='(x)=>{refresh_aspect_ratios_label(x);}')
+                    shared.gradio_root.load(lambda x: None, inputs=aspect_ratio_radio, queue=False, show_progress=False, _js='(x)=>{refresh_aspect_ratios_label(x);}')
+
+                    def toggle_custom(use_custom, ratio, w, h):
+                        if use_custom:
+                            return (gr.update(visible=False),
+                                    gr.update(visible=True, value=w),
+                                    gr.update(visible=True, value=h),
+                                    f"{int(w)}*{int(h)}")
+                        else:
+                            w_sel, h_sel = modules.util.parse_resolution_label(ratio)
+                            return (gr.update(visible=True),
+                                    gr.update(visible=False),
+                                    gr.update(visible=False),
+                                    ratio if ratio else f"{w_sel}*{h_sel}")
+
+                    custom_ratio_checkbox.change(
+                        toggle_custom,
+                        inputs=[custom_ratio_checkbox, aspect_ratio_radio, custom_width, custom_height],
+                        outputs=[aspect_ratio_radio, custom_width, custom_height, aspect_ratios_selection],
+                        queue=False, show_progress=False)
+
+                    def update_custom_ratio(use_custom, w, h, ratio):
+                        return f"{int(w)}*{int(h)}" if use_custom else ratio
+
+                    custom_width.change(update_custom_ratio,
+                                        inputs=[custom_ratio_checkbox, custom_width, custom_height, aspect_ratio_radio],
+                                        outputs=aspect_ratios_selection,
+                                        queue=False, show_progress=False)
+                    custom_height.change(update_custom_ratio,
+                                         inputs=[custom_ratio_checkbox, custom_width, custom_height, aspect_ratio_radio],
+                                         outputs=aspect_ratios_selection,
+                                         queue=False, show_progress=False)
 
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=modules.config.default_max_image_number, step=1, value=modules.config.default_image_number)
                 sd_upscale_checkbox.change(
@@ -992,6 +1036,7 @@ with shared.gradio_root:
 
         load_data_outputs = [advanced_checkbox, image_number, prompt, negative_prompt, style_selections,
                              performance_selection, overwrite_step, overwrite_switch, aspect_ratios_selection,
+                             custom_ratio_checkbox, custom_width, custom_height,
                              overwrite_width, overwrite_height, guidance_scale, sharpness, adm_scaler_positive,
                              adm_scaler_negative, adm_scaler_end, refiner_swap_method, adaptive_cfg, clip_skip,
                              base_model, refiner_model, refiner_switch, sampler_name, scheduler_name, vae_name,
@@ -1079,7 +1124,7 @@ with shared.gradio_root:
         ctrls = [currentTask, generate_image_grid]
         ctrls += [
             prompt, negative_prompt, style_selections, csv_style,
-            performance_selection, aspect_ratios_selection, image_number, output_format, seed_actual,
+            performance_selection, aspect_ratios_selection, custom_ratio_checkbox, custom_width, custom_height, image_number, output_format, seed_actual,
             read_wildcards_in_order, sharpness, guidance_scale
         ]
 
