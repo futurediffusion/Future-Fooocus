@@ -130,6 +130,10 @@ div:has(> #positive_prompt) {
     align-items: center;
 }
 
+.aspect_ratios_group label.custom_ratio_label {
+    flex: 0 0 100%;
+}
+
 .aspect_ratios_group > div:first-child {
     width: 100%;
     font-weight: bold;
