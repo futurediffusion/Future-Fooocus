@@ -176,6 +176,10 @@ div.block.gradio-accordion {
     padding: 8px 8px;
 }
 
+div.block.gradio-accordion summary {
+    padding-left: 6px;
+}
+
 
 
 /* txt2img/img2img specific */
