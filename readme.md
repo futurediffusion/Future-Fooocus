@@ -451,6 +451,7 @@ Applies a LoRA to the prompt. The LoRA file must be located in the `models/loras
 ## ADetailer Integration
 
 Future-Fooocus can automatically enhance faces and bodies using ADetailer. Detection models are downloaded on demand and stored in `models/detection/adetailer`.
+The integration now supports up to four independent tabs. Each tab can be enabled or disabled from the UI and the state is preserved in your presets. If downloading a model fails, a message will be printed so you can fetch the file manually.
 
 ## Forks
 

@@ -16,6 +16,7 @@ MODEL_URLS = {
     "person_yolov8s-seg.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8s-seg.pt",
     "yolov8x-worldv2.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/yolov8x-worldv2.pt",
 }
+TAB_COUNT = 4
 
 
 def ensure_model(model_name: str, url: Optional[str] = None) -> str:
@@ -25,7 +26,17 @@ def ensure_model(model_name: str, url: Optional[str] = None) -> str:
         target_url = url or MODEL_URLS.get(model_name)
         if target_url:
             print(f"[ADetailer] Downloading model {model_name} ...")
-            load_file_from_url(url=target_url, model_dir=config.path_adetailer_detection, file_name=model_name)
+            try:
+                load_file_from_url(
+                    url=target_url,
+                    model_dir=config.path_adetailer_detection,
+                    file_name=model_name,
+                )
+            except Exception as e:  # pragma: no cover - best effort
+                print(
+                    f"[ADetailer] failed to download {model_name}: {e}. "
+                    "Please download manually and place under models/detection/adetailer."
+                )
     return model_path
 
 
@@ -41,24 +52,34 @@ def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutp
     return ultralytics_predict(model_path, image, device="cpu")
 
 
-def apply_adetailer(image: Image.Image) -> Image.Image:
+def _apply_adetailer_single(image: Image.Image, model_name: str) -> Image.Image:
+    """Run detection with a single model and blur detected regions."""
+    result = detect(image, model_name)
+    num_masks = len(result.masks)
+    print(f"[ADetailer] {num_masks} masks detected using {model_name}")
+    if num_masks:
+        from PIL import ImageFilter
+
+        for idx, mask in enumerate(result.masks, 1):
+            blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
+            image.paste(blurred, mask=mask)
+            print(f"[ADetailer] Applied mask {idx}/{num_masks}")
+    return image
+
+
+def apply_adetailer_multi(image: Image.Image) -> Image.Image:
+    """Apply ADetailer for all enabled tabs."""
     if not config.default_adetailer_enable:
         return image
     try:
-        result = detect(image)
-        num_masks = len(result.masks)
-        print(
-            f"[ADetailer] {num_masks} masks detected using {config.default_adetailer_model}"
-        )
-
-        if num_masks:
-            from PIL import ImageFilter
-
-            for idx, mask in enumerate(result.masks, 1):
-                # simple blur over detected region as placeholder for real inpainting
-                blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
-                image.paste(blurred, mask=mask)
-                print(f"[ADetailer] Applied mask {idx}/{num_masks}")
+        for i in range(1, TAB_COUNT + 1):
+            if getattr(config, f"default_adetailer_tab{i}_enable", False):
+                _apply_adetailer_single(image, config.default_adetailer_model)
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
     return image
+
+
+# Backwards compatibility
+def apply_adetailer(image: Image.Image) -> Image.Image:
+    return apply_adetailer_multi(image)

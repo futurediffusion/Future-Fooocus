@@ -717,6 +717,10 @@ with shared.gradio_root:
                         adetailer_model = gr.Dropdown(label='ADetailer Model',
                                                      choices=list(adetailer_module.MODEL_URLS.keys()),
                                                      value=modules.config.default_adetailer_model)
+                        ad_tab1 = gr.Checkbox(label='Enable Tab 1', value=modules.config.default_adetailer_tab1_enable)
+                        ad_tab2 = gr.Checkbox(label='Enable Tab 2', value=modules.config.default_adetailer_tab2_enable)
+                        ad_tab3 = gr.Checkbox(label='Enable Tab 3', value=modules.config.default_adetailer_tab3_enable)
+                        ad_tab4 = gr.Checkbox(label='Enable Tab 4', value=modules.config.default_adetailer_tab4_enable)
                         with gr.Tabs():
                             with gr.Tab('Face'):
                                 ad_face_conf = gr.Slider(label='Face Confidence', minimum=0.0, maximum=1.0, step=0.01, value=0.3)
@@ -729,6 +733,10 @@ with shared.gradio_root:
                                             inputs=adetailer_enable, queue=False, show_progress=False)
                     adetailer_model.change(lambda x: modules.config.set_config_value('default_adetailer_model', x),
                                            inputs=adetailer_model, queue=False, show_progress=False)
+                    ad_tab1.change(lambda x: modules.config.set_config_value('default_adetailer_tab1_enable', x), inputs=ad_tab1, queue=False, show_progress=False)
+                    ad_tab2.change(lambda x: modules.config.set_config_value('default_adetailer_tab2_enable', x), inputs=ad_tab2, queue=False, show_progress=False)
+                    ad_tab3.change(lambda x: modules.config.set_config_value('default_adetailer_tab3_enable', x), inputs=ad_tab3, queue=False, show_progress=False)
+                    ad_tab4.change(lambda x: modules.config.set_config_value('default_adetailer_tab4_enable', x), inputs=ad_tab4, queue=False, show_progress=False)
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
