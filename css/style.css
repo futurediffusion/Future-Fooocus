@@ -540,3 +540,36 @@ div:has(> #positive_prompt) {
   word-break: break-word;
 }
 
+/* Padding for specific input cells and dropdowns */
+#custom-width,
+#custom-height,
+#sampler-name,
+#scheduler-name,
+#overwrite-step,
+#guidance-scale,
+#preset-selection,
+#performance-selection,
+#base-model,
+#refiner-model {
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+#aspect-ratios-selection {
+  padding: 8px 12px;
+  box-sizing: border-box;
+}
+
+#aspect-ratios-accordion > summary,
+#advanced-accordion > summary,
+#preset-accordion > summary {
+  padding-left: 8px;
+  padding-top: 4px;
+}
+
+#seed-container {
+  justify-content: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
