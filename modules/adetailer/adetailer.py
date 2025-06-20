@@ -52,29 +52,35 @@ def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutp
     return ultralytics_predict(model_path, image, device="cpu")
 
 
-def _apply_adetailer_single(image: Image.Image, model_name: str) -> Image.Image:
+def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | None = None) -> Image.Image:
     """Run detection with a single model and blur detected regions."""
     result = detect(image, model_name)
     num_masks = len(result.masks)
-    print(f"[ADetailer] {num_masks} masks detected using {model_name}")
+    prefix = f"Tab {tab_idx}: " if tab_idx is not None else ""
+    print(f"[ADetailer] {prefix}{num_masks} masks detected using {model_name}")
     if num_masks:
         from PIL import ImageFilter
 
         for idx, mask in enumerate(result.masks, 1):
             blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
             image.paste(blurred, mask=mask)
-            print(f"[ADetailer] Applied mask {idx}/{num_masks}")
+            print(f"[ADetailer] {prefix}Applied mask {idx}/{num_masks}")
     return image
 
 
 def apply_adetailer_multi(image: Image.Image) -> Image.Image:
     """Apply ADetailer for all enabled tabs."""
     if not config.default_adetailer_enable:
+        print("[ADetailer] disabled. skipping")
         return image
     try:
+        any_enabled = False
         for i in range(1, TAB_COUNT + 1):
             if getattr(config, f"default_adetailer_tab{i}_enable", False):
-                _apply_adetailer_single(image, config.default_adetailer_model)
+                any_enabled = True
+                _apply_adetailer_single(image, config.default_adetailer_model, tab_idx=i)
+        if not any_enabled:
+            print("[ADetailer] no tabs enabled. skipping")
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
     return image
