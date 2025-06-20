@@ -68,6 +68,8 @@ class AsyncTask:
         self.original_steps = self.steps
 
         self.aspect_ratios_selection = args.pop()
+        self.custom_width = args.pop()
+        self.custom_height = args.pop()
         self.image_number = args.pop()
         self.output_format = args.pop()
         self.seed = int(args.pop())
@@ -1256,6 +1258,11 @@ def worker():
         tiled = False
 
         width, height = modules.util.parse_resolution_label(async_task.aspect_ratios_selection)
+        if async_task.aspect_ratios_selection == 'Custom':
+            cw = int(async_task.custom_width) if async_task.custom_width else 0
+            ch = int(async_task.custom_height) if async_task.custom_height else 0
+            if cw > 0 and ch > 0:
+                width, height = cw, ch
 
         skip_prompt_processing = False
 

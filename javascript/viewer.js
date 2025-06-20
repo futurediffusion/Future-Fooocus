@@ -100,6 +100,9 @@ onUiLoaded(async () => {
                         span.classList.add(g.cls);
                         label.insertBefore(document.createTextNode(text), span);
                     }
+                    if (label.textContent.trim().startsWith('Custom')) {
+                        label.classList.add('custom_ratio_label');
+                    }
                     grp.appendChild(label);
                 } else {
                     let blank = document.createElement('div');
