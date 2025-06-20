@@ -99,7 +99,7 @@ div:has(> #positive_prompt) {
 }
 
 .advanced_check_row {
-  width: 330px !important;
+  width: 300px !important;
 }
 
 .min_check {
@@ -112,7 +112,7 @@ div:has(> #positive_prompt) {
 }
 
 .performance_selection label {
-    width: 140px !important;
+    width: 120px !important;
 }
 
 
