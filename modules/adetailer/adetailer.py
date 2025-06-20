@@ -11,6 +11,10 @@ if TYPE_CHECKING:  # pragma: no cover - type checking only
 MODEL_URLS = {
     "face_yolov8n.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8n.pt",
     "face_yolov8s.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8s.pt",
+    "hand_yolov8n.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8n.pt",
+    "person_yolov8n-seg.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8n-seg.pt",
+    "person_yolov8s-seg.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8s-seg.pt",
+    "yolov8x-worldv2.pt": "https://huggingface.co/Bingsu/adetailer/resolve/main/yolov8x-worldv2.pt",
 }
 
 
@@ -26,9 +30,13 @@ def ensure_model(model_name: str, url: Optional[str] = None) -> str:
 
 
 def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutput":
-    from .vendor_adetailer import ultralytics_predict
+    from .vendor_adetailer import ultralytics_predict, mediapipe_predict
 
     model_name = model_name or config.default_adetailer_model
+    if model_name.startswith("mediapipe_"):
+        # mediapipe models are builtin, no download required
+        return mediapipe_predict(model_name, image, confidence=0.3)
+
     model_path = ensure_model(model_name)
     return ultralytics_predict(model_path, image, device="cpu")
 
@@ -38,7 +46,19 @@ def apply_adetailer(image: Image.Image) -> Image.Image:
         return image
     try:
         result = detect(image)
-        print(f"[ADetailer] {len(result.masks)} masks detected using {config.default_adetailer_model}")
+        num_masks = len(result.masks)
+        print(
+            f"[ADetailer] {num_masks} masks detected using {config.default_adetailer_model}"
+        )
+
+        if num_masks:
+            from PIL import ImageFilter
+
+            for idx, mask in enumerate(result.masks, 1):
+                # simple blur over detected region as placeholder for real inpainting
+                blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
+                image.paste(blurred, mask=mask)
+                print(f"[ADetailer] Applied mask {idx}/{num_masks}")
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
     return image
