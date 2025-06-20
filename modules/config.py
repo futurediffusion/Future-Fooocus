@@ -196,6 +196,7 @@ path_fooocus_expansion = get_dir_or_set_default('path_fooocus_expansion', '../mo
 path_wildcards = get_dir_or_set_default('path_wildcards', '../wildcards/')
 path_safety_checker = get_dir_or_set_default('path_safety_checker', '../models/safety_checker/')
 path_sam = get_dir_or_set_default('path_sam', '../models/sam/')
+path_adetailer_detection = get_dir_or_set_default('path_adetailer_detection', '../models/detection/adetailer/')
 path_outputs = get_path_output()
 
 
@@ -421,6 +422,18 @@ default_developer_debug_mode_checkbox = get_config_item_or_set_default(
     default_value=False,
     validator=lambda x: isinstance(x, bool),
     expected_type=bool
+)
+default_adetailer_enable = get_config_item_or_set_default(
+    key='default_adetailer_enable',
+    default_value=False,
+    validator=lambda x: isinstance(x, bool),
+    expected_type=bool
+)
+default_adetailer_model = get_config_item_or_set_default(
+    key='default_adetailer_model',
+    default_value='face_yolov8n.pt',
+    validator=lambda x: isinstance(x, str),
+    expected_type=str
 )
 default_image_prompt_advanced_checkbox = get_config_item_or_set_default(
     key='default_image_prompt_advanced_checkbox',
@@ -827,6 +840,8 @@ possible_preset_keys = {
     "default_vae": "vae",
     # "default_inpaint_method": "inpaint_method", # disabled so inpaint mode doesn't refresh after every preset change
     "default_inpaint_engine_version": "inpaint_engine_version",
+    "default_adetailer_enable": "adetailer_enable",
+    "default_adetailer_model": "adetailer_model",
 }
 
 REWRITE_PRESET = False

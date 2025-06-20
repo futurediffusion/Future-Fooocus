@@ -25,6 +25,7 @@ from modules.ui_gradio_extensions import reload_javascript
 from modules.auth import auth_enabled, check_auth
 from modules.util import is_json
 from modules import simple_lora_ui
+from modules import adetailer as adetailer_module
 
 shared.prompt_styles = styles.StyleDatabase(["styles.csv", "styles_integrated.csv"])
 
@@ -707,6 +708,12 @@ with shared.gradio_root:
                                                      value=modules.config.default_performance,
                                                      elem_classes=['performance_selection'],
                                                      elem_id='performance-selection')
+
+                    with gr.Accordion(label='Adetailer', open=False, elem_id='adetailer-accordion'):
+                        adetailer_enable = gr.Checkbox(label='Enable ADetailer',
+                                                      value=modules.config.default_adetailer_enable)
+                        adetailer_enable.change(lambda x: modules.config.set_config_value('default_adetailer_enable', x),
+                                                inputs=adetailer_enable, queue=False, show_progress=False)
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
