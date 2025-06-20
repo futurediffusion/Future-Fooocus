@@ -645,19 +645,16 @@ with shared.gradio_root:
                                                        info='width × height',
                                                        elem_classes='aspect_ratios')
 
-                    with gr.Column(visible=False, elem_id='custom_ratio_column') as custom_ratio_column:
+                    with gr.Column(visible=True, elem_id='custom_ratio_column') as custom_ratio_column:
                         custom_width = gr.Number(label='Width', value=1024, minimum=64, maximum=2048, step=8)
                         custom_height = gr.Number(label='Height', value=1024, minimum=64, maximum=2048, step=8)
 
                     def _on_ratio_change(val):
                         if val != 'Custom':
                             modules.config.set_config_value('default_aspect_ratio', val)
-                            return gr.update(visible=False)
-                        return gr.update(visible=True)
 
                     aspect_ratios_selection.change(_on_ratio_change,
                                                   inputs=aspect_ratios_selection,
-                                                  outputs=custom_ratio_column,
                                                   queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
