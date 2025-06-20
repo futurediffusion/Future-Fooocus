@@ -11,7 +11,28 @@ from typing import Any, Generic, Optional, TypeVar
 from huggingface_hub import hf_hub_download
 from PIL import Image, ImageDraw
 from rich import print  # noqa: A004  Shadowing built-in 'print'
-from torchvision.transforms.functional import to_pil_image
+try:  # pragma: no cover - optional dependency
+    from torchvision.transforms.functional import to_pil_image
+except Exception:  # pragma: no cover - best effort fallback
+    import numpy as np
+    from PIL import Image as _Image
+
+    def to_pil_image(image, mode=None):
+        """Basic fallback for torchvision's to_pil_image."""
+        if hasattr(image, "detach"):
+            image = image.detach().cpu()
+        if hasattr(image, "numpy"):
+            image = image.numpy()
+        if isinstance(image, np.ndarray):
+            if image.ndim == 3 and image.shape[0] in (1, 3):
+                image = image.transpose(1, 2, 0)
+            if image.dtype != np.uint8:
+                image = (
+                    image * 255 if image.max() <= 1 else image
+                ).clip(0, 255).astype(np.uint8)
+        else:
+            image = np.asarray(image)
+        return _Image.fromarray(image, mode=mode)
 
 REPO_ID = "Bingsu/adetailer"
 
