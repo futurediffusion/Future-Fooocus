@@ -637,15 +637,16 @@ with shared.gradio_root:
                                              elem_id='negative_prompt',
                                              value=modules.config.default_prompt_negative)
 
-                with gr.Accordion(label='Aspect Ratios', open=False):
+                with gr.Accordion(label='Aspect Ratios', open=False, elem_id='aspect-ratios-accordion'):
                     aspect_ratios_selection = gr.Radio(label='Aspect Ratios', show_label=False,
                                                        choices=modules.config.available_aspect_ratios_labels,
                                                        value=modules.config.default_aspect_ratio,
                                                        info='width × height',
+                                                       elem_id='aspect-ratios-selection',
                                                        elem_classes='aspect_ratios')
                     with gr.Row():
-                        custom_width = gr.Number(label='Width', value=1024)
-                        custom_height = gr.Number(label='Height', value=1024)
+                        custom_width = gr.Number(label='Width', value=1024, elem_id='custom-width')
+                        custom_height = gr.Number(label='Height', value=1024, elem_id='custom-height')
 
                     aspect_ratios_selection.change(lambda x: modules.config.set_config_value('default_aspect_ratio', x),
                                                   inputs=aspect_ratios_selection, queue=False, show_progress=False,
@@ -659,7 +660,7 @@ with shared.gradio_root:
                     outputs=[sd_upscale_panel, image_number],
                     queue=False, show_progress=False)
 
-                with gr.Accordion(label='Advanced', open=False):
+                with gr.Accordion(label='Advanced', open=False, elem_id='advanced-accordion'):
 
                     with gr.Box(elem_id="seed-container"):
                         seed_input = gr.Number(label="Seed", value=-1, elem_id="seed-input")
@@ -669,15 +670,19 @@ with shared.gradio_root:
                         recycle_btn.click(lambda x: gr.update(value=x), inputs=seed_actual, outputs=seed_input, queue=False, show_progress=False)
 
                     sampler_name = gr.Dropdown(label='Sampler', choices=flags.sampler_list,
-                                               value=modules.config.default_sampler)
+                                               value=modules.config.default_sampler,
+                                               elem_id='sampler-name')
                     scheduler_name = gr.Dropdown(label='Scheduler', choices=flags.scheduler_list,
-                                                 value=modules.config.default_scheduler)
+                                                 value=modules.config.default_scheduler,
+                                                 elem_id='scheduler-name')
 
                     overwrite_step_default = modules.config.default_overwrite_step if modules.config.default_overwrite_step >= 0 else flags.Steps[flags.Performance(modules.config.default_performance).name].value
                     overwrite_step = gr.Slider(label='Steps', minimum=0, maximum=100, step=1,
-                                               value=overwrite_step_default)
+                                               value=overwrite_step_default,
+                                               elem_id='overwrite-step')
                     guidance_scale = gr.Slider(label='Guidance Scale', minimum=1.0, maximum=30.0, step=0.01,
                                                value=modules.config.default_cfg_scale,
+                                               elem_id='guidance-scale',
                                                info='Higher value means style is cleaner, vivider, and more artistic.')
 
                     sampler_name.change(lambda x: modules.config.set_config_value('default_sampler', x),
@@ -689,17 +694,19 @@ with shared.gradio_root:
                     guidance_scale.change(lambda x: modules.config.set_config_value('default_cfg_scale', x),
                                         inputs=guidance_scale, queue=False, show_progress=False)
 
-                with gr.Accordion(label='Preset', open=False):
+                with gr.Accordion(label='Preset', open=False, elem_id='preset-accordion'):
                     if not args_manager.args.disable_preset_selection:
                         preset_selection = gr.Dropdown(label='Preset',
                                                        choices=modules.config.available_presets,
                                                        value=args_manager.args.preset if args_manager.args.preset else "initial",
-                                                       interactive=True)
+                                                       interactive=True,
+                                                       elem_id='preset-selection')
 
                     performance_selection = gr.Radio(label='Performance',
                                                      choices=flags.Performance.values(),
                                                      value=modules.config.default_performance,
-                                                     elem_classes=['performance_selection'])
+                                                     elem_classes=['performance_selection'],
+                                                     elem_id='performance-selection')
 
                 def update_history_link():
                     if args_manager.args.disable_image_log:
@@ -735,8 +742,12 @@ with shared.gradio_root:
             with gr.Tab(label='Models'):
                 with gr.Group():
                     with gr.Row():
-                        base_model = gr.Dropdown(label='Base Model (SDXL only)', choices=modules.config.model_filenames, value=modules.config.default_base_model_name, show_label=True)
-                        refiner_model = gr.Dropdown(label='Refiner (SDXL or SD 1.5)', choices=['None'] + modules.config.model_filenames, value=modules.config.default_refiner_model_name, show_label=True)
+                        base_model = gr.Dropdown(label='Base Model (SDXL only)', choices=modules.config.model_filenames,
+                                                value=modules.config.default_base_model_name, show_label=True,
+                                                elem_id='base-model')
+                        refiner_model = gr.Dropdown(label='Refiner (SDXL or SD 1.5)', choices=['None'] + modules.config.model_filenames,
+                                                    value=modules.config.default_refiner_model_name, show_label=True,
+                                                    elem_id='refiner-model')
 
                     refiner_switch = gr.Slider(label='Refiner Switch At', minimum=0.1, maximum=1.0, step=0.0001,
                                                info='Use 0.4 for SD1.5 realistic models; '
