@@ -79,7 +79,8 @@ onUiLoaded(async () => {
         const groups = [
             {title: 'Square', count: 2, cls: 'square-ratio'},
             {title: 'Portrait', count: 4, cls: 'portrait-ratio'},
-            {title: 'Landscape', count: labels.length - 6, cls: 'landscape-ratio'}
+            {title: 'Landscape', count: labels.length - 7, cls: 'landscape-ratio'},
+            {title: 'Custom', count: 1, cls: 'custom-ratio'}
         ];
         let idx = 0;
         groups.forEach(g => {
@@ -93,6 +94,9 @@ onUiLoaded(async () => {
             for (let i = 0; i < g.count; i++) {
                 if (labels[idx]) {
                     let label = labels[idx];
+                    if (g.title === 'Custom') {
+                        label.classList.add('custom_ratio_label');
+                    }
                     let span = label.querySelector('span');
                     if (span) {
                         let text = span.textContent;
