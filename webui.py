@@ -650,7 +650,7 @@ with shared.gradio_root:
 
                     def aspect_ratio_changed(val):
                         modules.config.set_config_value('default_aspect_ratio', val)
-                        return gr.update(visible=val.lower().startswith('custom'))
+                        return gr.update(visible=(val or '').lower().startswith('custom'))
 
                     aspect_ratios_selection.change(aspect_ratio_changed,
                                                   inputs=aspect_ratios_selection,
@@ -658,7 +658,7 @@ with shared.gradio_root:
                                                   queue=False, show_progress=False,
                                                   _js='(x)=>{refresh_aspect_ratios_label(x);}')
 
-                    shared.gradio_root.load(lambda x: gr.update(visible=x.lower().startswith('custom')),
+                    shared.gradio_root.load(lambda x: gr.update(visible=(x or '').lower().startswith('custom')),
                                            inputs=aspect_ratios_selection,
                                            outputs=custom_size_row,
                                            queue=False, show_progress=False)
