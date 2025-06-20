@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from adetailer.args import ALL_ARGS, ADetailerArgs
+from modules.adetailer.vendor_adetailer.args import ALL_ARGS, ADetailerArgs
 
 
 def test_all_args() -> None:
