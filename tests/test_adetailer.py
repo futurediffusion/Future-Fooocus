@@ -1,7 +1,10 @@
 import os
+import sys
 import importlib
 import tempfile
 import unittest
+
+sys.argv = [sys.argv[0]]
 
 class TestADetailerDownload(unittest.TestCase):
     def test_ensure_model_path(self):
@@ -12,4 +15,3 @@ class TestADetailerDownload(unittest.TestCase):
         import modules.adetailer as ad
         path = ad.ensure_model('dummy.pt', url=None)
         self.assertTrue(path.startswith(temp_dir))
-
