@@ -108,12 +108,14 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     return image
 
 
-def _validate_image_output(image: Image.Image) -> Image.Image:
-    """Ensure the output is a valid RGB PIL image."""
+def _validate_image_output(image: Image.Image, expected_size: tuple[int, int] | None = None) -> Image.Image:
+    """Ensure the output is a valid RGB PIL image with the expected size."""
     if not isinstance(image, Image.Image):
         raise ValueError("Output is not a valid PIL.Image object.")
     if image.mode != "RGB":
         image = image.convert("RGB")
+    if expected_size and image.size != expected_size:
+        image = image.resize(expected_size, Image.LANCZOS)
     return image
 
 
@@ -125,6 +127,7 @@ def apply_adetailer_multi(image: Image.Image | np.ndarray, params: Optional[dict
 
     return_np = not isinstance(image, Image.Image)
     pil_img = ensure_pil_image(image)
+    original_size = pil_img.size
 
     try:
         enabled_tabs = [
@@ -143,7 +146,7 @@ def apply_adetailer_multi(image: Image.Image | np.ndarray, params: Optional[dict
             pil_img = _apply_adetailer_single(pil_img, config.default_adetailer_model, tab_idx=i)
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
-    pil_img = _validate_image_output(pil_img)
+    pil_img = _validate_image_output(pil_img, expected_size=original_size)
     if return_np:
         return np.array(pil_img)
     return pil_img
