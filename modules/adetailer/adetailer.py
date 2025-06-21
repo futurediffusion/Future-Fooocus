@@ -4,6 +4,9 @@ from typing import TYPE_CHECKING, Optional
 from PIL import Image, ImageFilter
 import numpy as np
 
+# enable saving intermediate crops if environment variable is set
+ADETAILER_DEBUG = os.getenv("ADETAILER_DEBUG", "0").lower() in {"1", "true", "yes"}
+
 from .vendor_adetailer.common import ensure_pil_image
 
 from modules import config
@@ -57,11 +60,12 @@ def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutp
     return ultralytics_predict(model_path, image, device="cpu")
 
 
-def _refine_mask_region(image: Image.Image, mask: Image.Image) -> None:
-    """Refine a masked region using an intermediate crop and filters."""
+def _refine_mask_region(image: Image.Image, mask: Image.Image, idx: int = 0) -> None:
+    """Refine a masked region using upscale, filters and feathered blending."""
     bbox = mask.getbbox()
     if not bbox:
         return
+
     x1, y1, x2, y2 = bbox
     pad = int(0.1 * max(x2 - x1, y2 - y1))
     x1 = max(0, x1 - pad)
@@ -70,10 +74,25 @@ def _refine_mask_region(image: Image.Image, mask: Image.Image) -> None:
     y2 = min(image.height, y2 + pad)
 
     region = image.crop((x1, y1, x2, y2))
-    refined = region.filter(ImageFilter.DETAIL)
-    refined = refined.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
-    mask_c = mask.crop((x1, y1, x2, y2)).resize(refined.size)
-    image.paste(refined, (x1, y1, x2, y2), mask=mask_c)
+    mask_crop = mask.crop((x1, y1, x2, y2))
+
+    if ADETAILER_DEBUG:
+        os.makedirs("debug", exist_ok=True)
+        region.save(f"debug/mask_{idx}_before.png")
+
+    scale = 2
+    up_size = (region.width * scale, region.height * scale)
+    upscaled = region.resize(up_size, Image.LANCZOS)
+    upscaled = upscaled.filter(ImageFilter.DETAIL)
+    upscaled = upscaled.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
+    refined = upscaled.resize(region.size, Image.LANCZOS)
+
+    if ADETAILER_DEBUG:
+        refined.save(f"debug/mask_{idx}_after.png")
+
+    feather_radius = max(1, int(0.05 * max(region.size)))
+    mask_blur = mask_crop.filter(ImageFilter.GaussianBlur(radius=feather_radius))
+    image.paste(refined, (x1, y1, x2, y2), mask=mask_blur)
 
 
 def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | None = None) -> Image.Image:
@@ -84,7 +103,7 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     print(f"[Adetailer] {prefix}{num_masks} masks detected using {model_name}")
     if num_masks:
         for idx, mask in enumerate(result.masks, 1):
-            _refine_mask_region(image, mask)
+            _refine_mask_region(image, mask, idx)
         print(f"[Adetailer] Applied {num_masks} masks on tab {tab_idx}")
     return image
 
