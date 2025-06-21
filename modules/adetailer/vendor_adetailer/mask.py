@@ -217,20 +217,30 @@ def filter_by_ratio(
     pred: PredictOutput[T], low: float, high: float
 ) -> PredictOutput[T]:
     if not pred.bboxes:
+        print("[DEBUG] filter_by_ratio: no bboxes to filter")
         return pred
 
     w, h = pred.preview.size
     orig_area = w * h
     items = len(pred.bboxes)
-    idx = [i for i in range(items) if is_in_ratio(pred.bboxes[i], low, high, orig_area)]
+    idx = []
+    for i in range(items):
+        area_ratio = bbox_area(pred.bboxes[i]) / orig_area
+        print(f"[DEBUG] bbox {i} area ratio: {area_ratio:.4f}")
+        if is_in_ratio(pred.bboxes[i], low, high, orig_area):
+            idx.append(i)
+        else:
+            print(f"[DEBUG] bbox {i} filtered out by ratio")
     pred.bboxes = [pred.bboxes[i] for i in idx]
     pred.masks = [pred.masks[i] for i in idx]
     pred.confidences = [pred.confidences[i] for i in idx]
+    print(f"[DEBUG] filter_by_ratio kept {len(pred.bboxes)}/{items} bboxes")
     return pred
 
 
 def filter_k_largest(pred: PredictOutput[T], k: int = 0) -> PredictOutput[T]:
     if not pred.bboxes or k == 0:
+        print("[DEBUG] filter_k_largest: nothing to filter")
         return pred
     areas = [bbox_area(bbox) for bbox in pred.bboxes]
     idx = np.argsort(areas)[-k:]
@@ -238,23 +248,27 @@ def filter_k_largest(pred: PredictOutput[T], k: int = 0) -> PredictOutput[T]:
     pred.bboxes = [pred.bboxes[i] for i in idx]
     pred.masks = [pred.masks[i] for i in idx]
     pred.confidences = [pred.confidences[i] for i in idx]
+    print(f"[DEBUG] filter_k_largest kept {len(idx)}/{len(areas)} bboxes")
     return pred
 
 
 def filter_k_most_confident(pred: PredictOutput[T], k: int = 0) -> PredictOutput[T]:
     if not pred.bboxes or not pred.confidences or k == 0:
+        print("[DEBUG] filter_k_most_confident: nothing to filter")
         return pred
     idx = np.argsort(pred.confidences)[-k:]
     idx = idx[::-1]
     pred.bboxes = [pred.bboxes[i] for i in idx]
     pred.masks = [pred.masks[i] for i in idx]
     pred.confidences = [pred.confidences[i] for i in idx]
+    print(f"[DEBUG] filter_k_most_confident kept {len(idx)}/{len(pred.confidences)} bboxes")
     return pred
 
 
 def filter_k_by(
     pred: PredictOutput[T], k: int = 0, by: str = "Area"
 ) -> PredictOutput[T]:
+    print(f"[DEBUG] filter_k_by: mode={by}, k={k}")
     if by == "Area":
         return filter_k_largest(pred, k)
     if by == "Confidence":

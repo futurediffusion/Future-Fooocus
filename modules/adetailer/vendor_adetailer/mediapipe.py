@@ -47,13 +47,16 @@ def mediapipe_face_detection(
         pred = face_detector.process(img_array)
 
     if pred.detections is None:
+        print("[DEBUG] mediapipe_face_detection: detections empty")
         return PredictOutput()
+
+    print(f"[DEBUG] mediapipe_face_detection: {len(pred.detections)} detections")
 
     preview_array = img_array.copy()
 
     bboxes = []
     confidences = []
-    for detection in pred.detections:
+    for i, detection in enumerate(pred.detections):
         draw_util.draw_detection(preview_array, detection)
 
         bbox = detection.location_data.relative_bounding_box
@@ -63,6 +66,9 @@ def mediapipe_face_detection(
         h = bbox.height * img_height
         x2 = x1 + w
         y2 = y1 + h
+
+        area = (x2 - x1) * (y2 - y1)
+        print(f"[DEBUG] detection {i} bbox area: {area}")
 
         confidences.append(detection.score)
         bboxes.append([x1, y1, x2, y2])
@@ -93,19 +99,28 @@ def mediapipe_face_mesh(
         pred = face_mesh.process(arr)
 
         if pred.multi_face_landmarks is None:
+            print("[DEBUG] mediapipe_face_mesh: multi_face_landmarks empty")
             return PredictOutput()
+
+        print(
+            f"[DEBUG] mediapipe_face_mesh: {len(pred.multi_face_landmarks)} faces"
+        )
 
         preview = arr.copy()
         masks = []
         confidences = []
 
-        for landmarks in pred.multi_face_landmarks:
+        for i, landmarks in enumerate(pred.multi_face_landmarks):
             draw_util.draw_landmarks(
                 image=preview,
                 landmark_list=landmarks,
                 connections=mp_face_mesh.FACEMESH_TESSELATION,
                 landmark_drawing_spec=None,
                 connection_drawing_spec=drawing_styles.get_default_face_mesh_tesselation_style(),
+            )
+
+            print(
+                f"[DEBUG] face {i}: {len(landmarks.landmark)} landmark points"
             )
 
             points = np.array(
@@ -116,6 +131,8 @@ def mediapipe_face_mesh(
             mask = Image.new("L", image.size, "black")
             draw = ImageDraw.Draw(mask)
             draw.polygon(outline, fill="white")
+            mask_area = int(np.count_nonzero(np.array(mask)))
+            print(f"[DEBUG] face {i} mask area: {mask_area}")
             masks.append(mask)
             confidences.append(1.0)  # Confidence is unknown
 
@@ -145,13 +162,22 @@ def mediapipe_face_mesh_eyes_only(
         pred = face_mesh.process(arr)
 
         if pred.multi_face_landmarks is None:
+            print("[DEBUG] mediapipe_face_mesh_eyes_only: multi_face_landmarks empty")
             return PredictOutput()
+
+        print(
+            f"[DEBUG] mediapipe_face_mesh_eyes_only: {len(pred.multi_face_landmarks)} faces"
+        )
 
         preview = image.copy()
         masks = []
         confidences = []
 
-        for landmarks in pred.multi_face_landmarks:
+        for i, landmarks in enumerate(pred.multi_face_landmarks):
+            print(
+                f"[DEBUG] face {i}: {len(landmarks.landmark)} landmark points"
+            )
+
             points = np.array(
                 [[land.x * w, land.y * h] for land in landmarks.landmark], dtype=int
             )
@@ -164,6 +190,8 @@ def mediapipe_face_mesh_eyes_only(
             draw = ImageDraw.Draw(mask)
             for outline in (left_outline, right_outline):
                 draw.polygon(outline, fill="white")
+            mask_area = int(np.count_nonzero(np.array(mask)))
+            print(f"[DEBUG] face {i} mask area: {mask_area}")
             masks.append(mask)
             confidences.append(1.0)  # Confidence is unknown
 
