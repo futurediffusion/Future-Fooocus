@@ -63,14 +63,10 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     num_masks = len(result.masks)
     prefix = f"Tab {tab_idx}: " if tab_idx is not None else ""
     print(f"[Adetailer] {prefix}{num_masks} masks detected using {model_name}")
-    debug_dir = os.getenv("ADETAILER_DEBUG")
-    if debug_dir:
-        os.makedirs(debug_dir, exist_ok=True)
-        if result.preview is not None:
-            preview_path = os.path.join(debug_dir, f"preview_{tab_idx or 0}.png")
-            result.preview.save(preview_path)
-        for j, m in enumerate(result.masks):
-            m.save(os.path.join(debug_dir, f"mask_{tab_idx or 0}_{j}.png"))
+    # Debug previews were previously saved only when the ADETAILER_DEBUG
+    # environment variable was defined. The logs are now always printed,
+    # but writing debug images is disabled by default to avoid cluttering
+    # the disk. Re-enable by customizing this section if needed.
     if num_masks:
         from PIL import ImageFilter
 
