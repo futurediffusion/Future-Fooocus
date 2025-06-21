@@ -27,3 +27,14 @@ class TestADetailerDownload(unittest.TestCase):
         img = Image.new('RGB', (10, 10))
         result = apply_adetailer_multi(img)
         self.assertEqual(result.size, (10, 10))
+
+    def test_refine_mask_region(self):
+        from modules.adetailer.adetailer import _refine_mask_region
+        from PIL import Image, ImageDraw
+
+        img = Image.new('RGB', (20, 20), 'white')
+        mask = Image.new('L', (20, 20), 0)
+        ImageDraw.Draw(mask).rectangle([5, 5, 15, 15], fill=255)
+
+        _refine_mask_region(img, mask)
+        self.assertEqual(img.size, (20, 20))

@@ -1,7 +1,7 @@
 import os
 from typing import TYPE_CHECKING, Optional
 
-from PIL import Image
+from PIL import Image, ImageFilter
 import numpy as np
 
 from .vendor_adetailer.common import ensure_pil_image
@@ -57,22 +57,34 @@ def detect(image: Image.Image, model_name: Optional[str] = None) -> "PredictOutp
     return ultralytics_predict(model_path, image, device="cpu")
 
 
+def _refine_mask_region(image: Image.Image, mask: Image.Image) -> None:
+    """Refine a masked region using an intermediate crop and filters."""
+    bbox = mask.getbbox()
+    if not bbox:
+        return
+    x1, y1, x2, y2 = bbox
+    pad = int(0.1 * max(x2 - x1, y2 - y1))
+    x1 = max(0, x1 - pad)
+    y1 = max(0, y1 - pad)
+    x2 = min(image.width, x2 + pad)
+    y2 = min(image.height, y2 + pad)
+
+    region = image.crop((x1, y1, x2, y2))
+    refined = region.filter(ImageFilter.DETAIL)
+    refined = refined.filter(ImageFilter.UnsharpMask(radius=2, percent=150))
+    mask_c = mask.crop((x1, y1, x2, y2)).resize(refined.size)
+    image.paste(refined, (x1, y1, x2, y2), mask=mask_c)
+
+
 def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | None = None) -> Image.Image:
-    """Run detection with a single model and blur detected regions."""
+    """Run detection with a single model and refine detected regions."""
     result = detect(image, model_name)
     num_masks = len(result.masks)
     prefix = f"Tab {tab_idx}: " if tab_idx is not None else ""
     print(f"[Adetailer] {prefix}{num_masks} masks detected using {model_name}")
-    # Debug previews were previously saved only when the ADETAILER_DEBUG
-    # environment variable was defined. The logs are now always printed,
-    # but writing debug images is disabled by default to avoid cluttering
-    # the disk. Re-enable by customizing this section if needed.
     if num_masks:
-        from PIL import ImageFilter
-
         for idx, mask in enumerate(result.masks, 1):
-            blurred = image.filter(ImageFilter.GaussianBlur(radius=2))
-            image.paste(blurred, mask=mask)
+            _refine_mask_region(image, mask)
         print(f"[Adetailer] Applied {num_masks} masks on tab {tab_idx}")
     return image
 
