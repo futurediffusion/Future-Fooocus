@@ -37,6 +37,7 @@ def prepare_environment():
     torch_command = os.environ.get('TORCH_COMMAND',
                                    f"pip install torch==2.1.0 torchvision==0.16.0 --extra-index-url {torch_index_url}")
     requirements_file = os.environ.get('REQS_FILE', "requirements_versions.txt")
+    additional_requirements_file = "requirements.txt"
 
     print(f"Python {sys.version}")
     print(f"Fooocus version: {fooocus_version.version}")
@@ -61,6 +62,9 @@ def prepare_environment():
 
     if REINSTALL_ALL or not requirements_met(requirements_file):
         run_pip(f"install -r \"{requirements_file}\"", "requirements")
+
+    if os.path.exists(additional_requirements_file):
+        run_pip(f"install -r \"{additional_requirements_file}\"", "additional requirements")
 
     return
 
