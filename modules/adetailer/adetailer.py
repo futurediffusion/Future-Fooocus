@@ -108,6 +108,15 @@ def _apply_adetailer_single(image: Image.Image, model_name: str, tab_idx: int | 
     return image
 
 
+def _validate_image_output(image: Image.Image) -> Image.Image:
+    """Ensure the output is a valid RGB PIL image."""
+    if not isinstance(image, Image.Image):
+        raise ValueError("Output is not a valid PIL.Image object.")
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    return image
+
+
 def apply_adetailer_multi(image: Image.Image | np.ndarray, params: Optional[dict] = None) -> Image.Image | np.ndarray:
     """Apply ADetailer for all enabled tabs."""
     if not config.default_adetailer_enable:
@@ -134,6 +143,7 @@ def apply_adetailer_multi(image: Image.Image | np.ndarray, params: Optional[dict
             pil_img = _apply_adetailer_single(pil_img, config.default_adetailer_model, tab_idx=i)
     except Exception as e:  # pragma: no cover - best effort
         print(f"[ADetailer] failed: {e}")
+    pil_img = _validate_image_output(pil_img)
     if return_np:
         return np.array(pil_img)
     return pil_img

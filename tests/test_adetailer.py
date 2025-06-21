@@ -27,6 +27,17 @@ class TestADetailerDownload(unittest.TestCase):
         img = Image.new('RGB', (10, 10))
         result = apply_adetailer_multi(img)
         self.assertEqual(result.size, (10, 10))
+        self.assertIsInstance(result, Image.Image)
+        self.assertEqual(result.mode, 'RGB')
+
+    def test_validate_image_output(self):
+        from modules.adetailer.adetailer import _validate_image_output
+        from PIL import Image
+
+        img = Image.new('L', (5, 5))
+        validated = _validate_image_output(img)
+        self.assertIsInstance(validated, Image.Image)
+        self.assertEqual(validated.mode, 'RGB')
 
     def test_refine_mask_region(self):
         from modules.adetailer.adetailer import _refine_mask_region
